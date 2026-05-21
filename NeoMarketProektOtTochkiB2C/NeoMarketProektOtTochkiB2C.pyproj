@@ -5,7 +5,9 @@
     <Name>NeoMarketProektOtTochkiB2C</Name>
     <RootNamespace>NeoMarketProektOtTochkiB2C</RootNamespace>
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
-    <TestFramework>Pytest</TestFramework>
+    <TestFramework>unittest</TestFramework>
+    <UnitTestPattern>test*.py</UnitTestPattern>
+    <UnitTestRootDirectory>.</UnitTestRootDirectory>
   </PropertyGroup>
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -34,6 +36,21 @@
   <ItemGroup>
     <Compile Include="app\forms.py" />
     <Compile Include="app\models.py" />
+    <Compile Include="app\exceptions.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="app\apps.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="app\urls.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="app\serializers.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="app\services.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="app\tests.py" />
     <Compile Include="app\views.py" />
     <Compile Include="app\__init__.py" />
