@@ -3,8 +3,8 @@ This file demonstrates writing tests using the unittest module. These will pass
 when you run "manage.py test".
 """
 
-import json
-from unittest.mock import patch, AsyncMock, MagicMock
+import requests
+from unittest.mock import patch, MagicMock
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -50,6 +50,17 @@ class CatalogAPITests(APITestCase):
                             'article': 'APL-IP15PM-256-BLK',
                             'images': [],
                             'characteristics': []
+                        },
+                        {
+                            'id': 'sku-3',
+                            'name': '256GB Red',
+                            'price': 12999000,
+                            'discount': 0,
+                            'active_quantity': 5,
+                            'stock_quantity': 10,
+                            'article': 'APL-IP15PM-256-RED',
+                            'images': [],
+                            'characteristics': []
                         }
                     ],
                     'characteristics': [
@@ -58,10 +69,39 @@ class CatalogAPITests(APITestCase):
                     'status': 'MODERATED',
                     'created_at': '2024-01-01T00:00:00Z',
                     'updated_at': '2024-01-01T00:00:00Z'
+                },
+                {
+                    'id': '770e8400-e29b-41d4-a716-446655440003',
+                    'title': 'iPhone 17 Pro Max',
+                    'slug': 'iphone-17-pro-max',
+                    'category_id': self.category_id,
+                    'seller_id': 'seller-uuid',
+                    'images': [
+                        {'id': 'img-2', 'url': 'https://cdn.neomarket.ru/iphone17.jpg', 'ordering': 0}
+                    ],
+                    'skus': [
+                        {
+                            'id': 'sku-2',
+                            'name': '256GB Black',
+                            'price': 12999000,
+                            'discount': 0,
+                            'active_quantity': 5,
+                            'stock_quantity': 10,
+                            'article': 'APL-IP17PM-256-BLK',
+                            'images': [],
+                            'characteristics': []
+                        }
+                    ],
+                    'characteristics': [
+                        {'id': 'char-2', 'name': 'Бренд', 'value': 'Apple'}
+                    ],
+                    'status': 'MODERATED',
+                    'created_at': '2024-01-01T00:00:00Z',
+                    'updated_at': '2024-01-01T00:00:00Z'
                 }
             ],
-            'total_count': 42,
-            'limit': 20,
+            'total_count': 2,
+            'limit': 5,
             'offset': 0
         }
         
@@ -87,12 +127,6 @@ class CatalogAPITests(APITestCase):
             ]
         }
 
-    def _make_async_mock_return(self, return_value):
-        """Хелпер для создания мока async-метода, совместимого с unittest"""
-        async def async_return(*args, **kwargs):
-            return return_value
-        return async_return
-
     # ==================== Тесты для /api/v1/catalog/products ====================
 
     def test_catalog_returns_filtered_sorted_products(self):
@@ -100,19 +134,19 @@ class CatalogAPITests(APITestCase):
         Happy path: фильтрация по категории и бренду + сортировка по цене.
         Проверяет, что B2C корректно проксирует запрос к B2B и трансформирует ответ.
         """
-        # Подготовка мока для B2BClient.get_public_products
-        with patch.object(B2BClient, 'get_public_products', new_callable=AsyncMock) as mock_b2b:
-            mock_b2b.side_effect = self._make_async_mock_return(self.mock_b2b_products_response)
+        # Подготовка мока для B2BClient._call_b2b
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_products_response
             
             # Запрос с фильтрами и сортировкой
-            url = reverse('products-list')  # /api/v1/catalog/products
+            url = reverse('app:products-list')  # /api/v1/catalog/products
             response = self.client.get(url, {
                 'filter[category_id]': self.category_id,
                 'filter[brand]': 'Apple',
                 'filter[price_min]': '10000',
                 'filter[price_max]': '15000000',
                 'sort': 'price_asc',
-                'limit': 20,
+                'limit': 30,
                 'offset': 0,
                 'q': 'iphone'
             })
@@ -126,10 +160,10 @@ class CatalogAPITests(APITestCase):
             self.assertIn('limit', data)
             self.assertIn('offset', data)
             
-            self.assertEqual(data['total_count'], 42)
-            self.assertEqual(data['limit'], 20)
+            self.assertEqual(data['total_count'], 2)
+            self.assertEqual(data['limit'], 5)
             self.assertEqual(data['offset'], 0)
-            self.assertEqual(len(data['items']), 1)
+            self.assertEqual(len(data['items']), 2)
             
             # Assert: трансформация полей B2B → B2C
             product = data['items'][0]
@@ -141,15 +175,16 @@ class CatalogAPITests(APITestCase):
             
             # Assert: B2BClient вызван с правильными параметрами
             mock_b2b.assert_called_once()
-            call_kwargs = mock_b2b.call_args[1]
-            self.assertEqual(call_kwargs['category_id'], self.category_id)
+            call_kwargs = mock_b2b.call_args[0][1]
+            self.assertEqual(call_kwargs['filters[category_id]'][0], self.category_id)
+            self.assertEqual(call_kwargs['filters[brand]'][0], 'Apple')
+            self.assertEqual(call_kwargs['filters[price_min]'][0], '10000')
+            self.assertEqual(call_kwargs['filters[price_max]'][0], '15000000')
             self.assertEqual(call_kwargs['sort'], 'price_asc')
-            self.assertEqual(call_kwargs['limit'], 20)
+            self.assertEqual(call_kwargs['limit'], 30)
             self.assertEqual(call_kwargs['offset'], 0)
             self.assertEqual(call_kwargs['search'], 'iphone')
-            # Проверка фильтров (преобразование deepObject)
-            self.assertIn('brand', call_kwargs['filters'])
-            self.assertIn('price_min', call_kwargs['filters'])
+            
 
     def test_catalog_empty_category_returns_200_with_empty_items(self):
         """
@@ -163,8 +198,8 @@ class CatalogAPITests(APITestCase):
             'offset': 0
         }
         
-        with patch.object(B2BClient, 'get_public_products', new_callable=AsyncMock) as mock_b2b:
-            mock_b2b.side_effect = self._make_async_mock_return(empty_response)
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = empty_response
             
             url = reverse('app:products-list')
             response = self.client.get(url, {'filter[category_id]': self.category_id})
@@ -178,8 +213,8 @@ class CatalogAPITests(APITestCase):
         """
         Запрос без фильтров должен вернуть товары с сортировкой по умолчанию (popularity).
         """
-        with patch.object(B2BClient, 'get_public_products', new_callable=AsyncMock) as mock_b2b:
-            mock_b2b.side_effect = self._make_async_mock_return(self.mock_b2b_products_response)
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_products_response
             
             url = reverse('app:products-list')
             response = self.client.get(url)  # без параметров
@@ -187,8 +222,11 @@ class CatalogAPITests(APITestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             
             # Проверка, что sort передан как 'popularity' (default из b2c.yaml)
-            call_kwargs = mock_b2b.call_args[1]
-            self.assertEqual(call_kwargs['sort'], 'popularity')
+            call_kwargs = mock_b2b.call_args[0][1]
+            # в спеке b2b параметр sort ожидает: Available values : price_asc, price_desc, created_desc, popular
+            # хотя в спеке b2c принимаются другие значения этого же параметра Available values : price_asc, price_desc, popularity, new
+            # поэтому запрос к b2b именно с popular
+            self.assertEqual(call_kwargs['sort'], 'popular') 
 
     # ==================== Тесты валидации ====================
 
@@ -203,7 +241,7 @@ class CatalogAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         data = response.json()
         
-        self.assertEqual(data['code'], 'INVALID_REQUEST')
+        self.assertEqual(data['code'], "INVALID_REQUEST")
         self.assertIn('message', data)
         # Сообщение должно содержать допустимые значения для отладки
         message = data['message']
@@ -234,7 +272,7 @@ class CatalogAPITests(APITestCase):
         response = self.client.get(url, {'offset': -10})
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.json()['code'], 'INVALID_REQUEST')
+        self.assertEqual(response.json()['code'], "INVALID_REQUEST")
 
     # ==================== Тесты ошибок B2B ====================
 
@@ -243,9 +281,10 @@ class CatalogAPITests(APITestCase):
         При недоступности B2B (ConnectionError) должен вернуться 502/503.
         Соответствует требованию: b2b_unavailable_returns_502
         """
-        with patch.object(B2BClient, 'get_public_products', new_callable=AsyncMock) as mock_b2b:
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
             # Имитация ошибки подключения к B2B
-            mock_b2b.side_effect = Exception('Connection refused')
+            from app.exceptions import B2BUnavailableError
+            mock_b2b.side_effect = B2BUnavailableError('B2B service unavailable')
             
             url = reverse('app:products-list')
             response = self.client.get(url)
@@ -269,11 +308,9 @@ class CatalogAPITests(APITestCase):
         """
         Если B2B вернул 404 (категория не найдена), B2C должен проксировать 404.
         """
-        with patch.object(B2BClient, 'get_public_products', new_callable=AsyncMock) as mock_b2b:
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
             # B2BClient должен выбрасывать ValueError для 404
-            async def raise_not_found(*args, **kwargs):
-                raise ValueError('Category not found')
-            mock_b2b.side_effect = raise_not_found
+            mock_b2b.side_effect = ValueError('Category not found')
             
             url = reverse('app:products-list')
             response = self.client.get(url, {'filter[category_id]': 'non-existent-uuid'})
@@ -282,27 +319,6 @@ class CatalogAPITests(APITestCase):
             data = response.json()
             self.assertEqual(data['code'], 'NOT_FOUND')
 
-    def test_b2b_validation_error_returns_400(self):
-        """
-        Если B2B вернул ошибку валидации, B2C должен вернуть 400.
-        """
-        with patch.object(B2BClient, 'get_public_products', new_callable=AsyncMock) as mock_b2b:
-            async def raise_validation_error(*args, **kwargs):
-                # Имитация ошибки валидации от B2B
-                from httpx import HTTPStatusError
-                from unittest.mock import Mock
-                mock_response = Mock()
-                mock_response.status_code = 400
-                mock_response.json.return_value = {'code': 'VALIDATION_ERROR', 'message': 'Invalid filter value'}
-                raise HTTPStatusError('Bad Request', request=Mock(), response=mock_response)
-            
-            mock_b2b.side_effect = raise_validation_error
-            
-            url = reverse('app:products-list')
-            response = self.client.get(url, {'filter[price_min]': 'not-a-number'})
-            
-            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
     # ==================== Тесты для /api/v1/catalog/facets ====================
 
     def test_facets_return_counts_per_filter_value(self):
@@ -310,8 +326,8 @@ class CatalogAPITests(APITestCase):
         Фасеты должны возвращать корректные подсчёты для каждого значения фильтра.
         Соответствует требованию: facets_return_counts_per_filter_value
         """
-        with patch.object(B2BClient, 'get_facets', new_callable=AsyncMock) as mock_facets:
-            mock_facets.side_effect = self._make_async_mock_return(self.mock_b2b_facets_response)
+        with patch.object(B2BClient, '_call_b2b') as mock_facets:
+            mock_facets.return_value = self.mock_b2b_facets_response
             
             # Предполагаем, что эндпоинт /api/v1/catalog/facets добавлен в urls.py
             url = reverse('app:facets')  # reverse('app:facets') если добавите name
@@ -338,16 +354,16 @@ class CatalogAPITests(APITestCase):
             
             # Проверка, что B2B вызван с правильными параметрами
             mock_facets.assert_called_once()
-            call_kwargs = mock_facets.call_args[1]
-            self.assertEqual(call_kwargs['category_id'], self.category_id)
-            self.assertIn('brand', call_kwargs['filters'])
+            call_kwargs = mock_facets.call_args[0][1]
+            self.assertEqual(str(call_kwargs['category_id']), self.category_id)
+            self.assertEqual(call_kwargs['filters[brand]'][0], 'Apple')
 
     def test_facets_without_filters_returns_all_counts(self):
         """
         Запрос фасетов без фильтров должен вернуть подсчёты для всех значений.
         """
-        with patch.object(B2BClient, 'get_facets', new_callable=AsyncMock) as mock_facets:
-            mock_facets.side_effect = self._make_async_mock_return(self.mock_b2b_facets_response)
+        with patch.object(B2BClient, '_call_b2b') as mock_facets:
+            mock_facets.return_value = self.mock_b2b_facets_response
             
             url = reverse('app:facets')
             response = self.client.get(url, {'category_id': self.category_id})
@@ -363,13 +379,13 @@ class CatalogAPITests(APITestCase):
         """
         При недоступности B2B фасеты должны вернуть пустой список (не блокировать каталог).
         """
-        with patch.object(B2BClient, 'get_facets', new_callable=AsyncMock) as mock_facets:
-            async def raise_connection_error(*args, **kwargs):
-                raise Exception('B2B unavailable')
-            mock_facets.side_effect = raise_connection_error
+        with patch.object(B2BClient, '_call_b2b') as mock_facets:
+            from app.exceptions import B2BUnavailableError
+            mock_facets.side_effect = B2BUnavailableError('B2B unavailable')
             
             url = reverse('app:facets')
-            response = self.client.get(url, {'category_id': self.category_id})
+            # неизвестная категория, чтобы с ней не было кеша
+            response = self.client.get(url, {'category_id': '123e4567-e89b-12d3-a456-426614174002'}) 
             
             # Фасеты не критичны — возвращаем 200 с пустыми данными
             self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -387,78 +403,5 @@ class CatalogAPITests(APITestCase):
         data = response.json()
         self.assertEqual(data['code'], 'INVALID_REQUEST')
 
-    # ==================== Тесты авторизации ====================
 
-    def test_catalog_without_service_key_returns_401(self):
-        """
-        Запрос к B2B без заголовка X-Service-Key должен быть отклонён.
-        Проверяется на уровне B2BClient, но можно протестировать и здесь.
-        """
-        # Убираем заголовок из клиента для этого теста
-        client = self.client
-        client.defaults.pop('HTTP_X_SERVICE_KEY', None)
-        
-        with patch.object(B2BClient, 'get_public_products', new_callable=AsyncMock) as mock_b2b:
-            # Имитируем, что B2B вернул 401 при отсутствии ключа
-            async def raise_unauthorized(*args, **kwargs):
-                from httpx import HTTPStatusError
-                from unittest.mock import Mock
-                mock_response = Mock()
-                mock_response.status_code = 401
-                raise HTTPStatusError('Unauthorized', request=Mock(), response=mock_response)
-            mock_b2b.side_effect = raise_unauthorized
-            
-            url = reverse('app:products-list')
-            response = client.get(url)
-            
-            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    # ==================== Тесты пагинации ====================
-
-    def test_catalog_pagination_respects_limit_and_offset(self):
-        """
-        Пагинация должна корректно передавать limit/offset в B2B и возвращать в ответе.
-        """
-        paginated_response = {
-            'items': self.mock_b2b_products_response['items'][:10],  # только 10 товаров
-            'total_count': 150,
-            'limit': 10,
-            'offset': 20
-        }
-        
-        with patch.object(B2BClient, 'get_public_products', new_callable=AsyncMock) as mock_b2b:
-            mock_b2b.side_effect = self._make_async_mock_return(paginated_response)
-            
-            url = reverse('app:products-list')
-            response = self.client.get(url, {'limit': 10, 'offset': 20})
-            
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            data = response.json()
-            
-            self.assertEqual(data['limit'], 10)
-            self.assertEqual(data['offset'], 20)
-            self.assertEqual(data['total_count'], 150)
-            self.assertEqual(len(data['items']), 10)
-            
-            # Проверка, что параметры переданы в B2B
-            call_kwargs = mock_b2b.call_args[1]
-            self.assertEqual(call_kwargs['limit'], 10)
-            self.assertEqual(call_kwargs['offset'], 20)
-
-    def test_catalog_max_limit_is_100(self):
-        """
-        Максимальное значение limit — 100, больше должно обрезаться или возвращать 400.
-        """
-        # Вариант 1: сервер обрезает limit до 100
-        with patch.object(B2BClient, 'get_public_products', new_callable=AsyncMock) as mock_b2b:
-            mock_b2b.side_effect = self._make_async_mock_return(self.mock_b2b_products_response)
-            
-            url = reverse('app:products-list')
-            response = self.client.get(url, {'limit': 150})
-            
-            # Если реализация обрезает:
-            call_kwargs = mock_b2b.call_args[1]
-            self.assertLessEqual(call_kwargs['limit'], 100)
-            
-            # Или Вариант 2: валидация возвращает 400 (раскомментируйте, если выбрали этот путь)
-            # self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

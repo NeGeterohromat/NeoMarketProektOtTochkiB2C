@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.558" timestamp="2026-05-22T17:38:18.183327+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_invalid_sort_returns_400" file="app\tests.py" line="229" time="0.234"><failure message="AssertionError: 400 != 'INVALID_REQUEST'">self = &lt;app.tests.CatalogAPITests testMethod=test_invalid_sort_returns_400&gt;
+
+    def test_invalid_sort_returns_400(self):
+        """
+        Невалидный параметр sort должен вернуть 400 с перечислением допустимых значений.
+        Соответствует требованию: invalid_sort_returns_400
+        """
+        url = reverse('app:products-list')
+        response = self.client.get(url, {'sort': 'invalid_sort_value'})
+    
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.json()
+    
+&gt;       self.assertEqual(data['code'], 'INVALID_REQUEST')
+E       AssertionError: 400 != 'INVALID_REQUEST'
+
+app\tests.py:241: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+2
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="16" time="0.645" timestamp="2026-05-22T16:47:28.912115+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_b2b_category_not_found_returns_404" file="app\tests.py" line="303" time="0.227"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_b2b_unavailable_returns_502" file="app\tests.py" line="275" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Bad Gateway: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_b2b_validation_error_returns_400" file="app\tests.py" line="318" time="0.003"><failure message="AssertionError: 500 != 400">self = &lt;app.tests.CatalogAPITests testMethod=test_b2b_validation_error_returns_400&gt;
+
+    def test_b2b_validation_error_returns_400(self):
+        """
+        Если B2B вернул ошибку валидации, B2C должен вернуть 400.
+        """
+        with patch.object(B2BClient, 'get_public_products') as mock_b2b:
+            # Имитация ошибки валидации от B2B
+            mock_b2b.side_effect = requests.exceptions.HTTPError('Bad Request')
+            mock_b2b.side_effect.response = MagicMock()
+            mock_b2b.side_effect.response.status_code = 400
+    
+            url = reverse('app:products-list')
+            response = self.client.get(url, {'filter[price_min]': 'not-a-number'})
+    
+&gt;           self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+E           AssertionError: 500 != 400
+
+app\tests.py:332: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_empty_category_returns_200_with_empty_items" file="app\tests.py" line="188" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_max_limit_is_100" file="app\tests.py" line="470" time="0.002"><failure message="TypeError: 'NoneType' object is not subscriptable">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_max_limit_is_100&gt;
+
+    def test_catalog_max_limit_is_100(self):
+        """
+        Максимальное значение limit — 100, больше должно обрезаться или возвращать 400.
+        """
+        with patch.object(B2BClient, 'get_public_products') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_products_response
+    
+            url = reverse('app:products-list')
+            response = self.client.get(url, {'limit': 150})
+    
+            # Если реализация обрезает:
+&gt;           call_kwargs = mock_b2b.call_args[1]
+                          ^^^^^^^^^^^^^^^^^^^^^
+E           TypeError: 'NoneType' object is not subscriptable
+
+app\tests.py:482: TypeError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_no_filters_returns_default_sorted_products" file="app\tests.py" line="211" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_pagination_respects_limit_and_offset" file="app\tests.py" line="440" time="0.003"><failure message="AssertionError: 2 != 10">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_pagination_respects_limit_and_offset&gt;
+
+    def test_catalog_pagination_respects_limit_and_offset(self):
+        """
+        Пагинация должна корректно передавать limit/offset в B2B и возвращать в ответе.
+        """
+        paginated_response = {
+            'items': self.mock_b2b_products_response['items'][:10],  # только 10 товаров
+            'total_count': 150,
+            'limit': 10,
+            'offset': 20
+        }
+    
+        with patch.object(B2BClient, 'get_public_products') as mock_b2b:
+            mock_b2b.return_value = paginated_response
+    
+            url = reverse('app:products-list')
+            response = self.client.get(url, {'limit': 10, 'offset': 20})
+    
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+    
+            self.assertEqual(data['limit'], 10)
+            self.assertEqual(data['offset'], 20)
+            self.assertEqual(data['total_count'], 150)
+&gt;           self.assertEqual(len(data['items']), 10)
+E           AssertionError: 2 != 10
+
+app\tests.py:464: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_returns_filtered_sorted_products" file="app\tests.py" line="131" time="0.003"><failure message="KeyError: 'category_id'">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_returns_filtered_sorted_products&gt;
+
+    def test_catalog_returns_filtered_sorted_products(self):
+        """
+        Happy path: фильтрация по категории и бренду + сортировка по цене.
+        Проверяет, что B2C корректно проксирует запрос к B2B и трансформирует ответ.
+        """
+        # Подготовка мока для B2BClient._call_b2b
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_products_response
+    
+            # Запрос с фильтрами и сортировкой
+            url = reverse('app:products-list')  # /api/v1/catalog/products
+            response = self.client.get(url, {
+                'filter[category_id]': self.category_id,
+                'filter[brand]': 'Apple',
+                'filter[price_min]': '10000',
+                'filter[price_max]': '15000000',
+                'sort': 'price_asc',
+                'limit': 30,
+                'offset': 0,
+                'q': 'iphone'
+            })
+    
+            # Assert: статус и структура ответа
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+    
+            self.assertIn('items', data)
+            self.assertIn('total_count', data)
+            self.assertIn('limit', data)
+            self.assertIn('offset', data)
+    
+            self.assertEqual(data['total_count'], 2)
+            self.assertEqual(data['limit'], 5)
+            self.assertEqual(data['offset'], 0)
+            self.assertEqual(len(data['items']), 2)
+    
+            # Assert: трансформация полей B2B → B2C
+            product = data['items'][0]
+            self.assertEqual(product['id'], self.product_id)
+            self.assertEqual(product['name'], 'iPhone 15 Pro Max')  # B2B: title → B2C: name
+            self.assertEqual(product['min_price'], 12999000)  # вычислено из SKU
+            self.assertTrue(product['has_stock'])  # active_quantity &gt; 0
+            self.assertIn('images', product)
+    
+            # Assert: B2BClient вызван с правильными параметрами
+            mock_b2b.assert_called_once()
+            call_kwargs = mock_b2b.call_args[0][0]
+            print(call_kwargs)
+&gt;           self.assertEqual(call_kwargs['category_id'], self.category_id)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'category_id'
+
+app\tests.py:180: KeyError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+{'limit': 30, 'offset': 0, 'search': 'iphone', 'sort': 'price_asc'}
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_without_service_key_returns_401" file="app\tests.py" line="418" time="0.002"><failure message="AssertionError: 500 != 401">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_without_service_key_returns_401&gt;
+
+    def test_catalog_without_service_key_returns_401(self):
+        """
+        Запрос к B2B без заголовка X-Service-Key должен быть отклонён.
+        Проверяется на уровне B2BClient, но можно протестировать и здесь.
+        """
+        # Убираем заголовок из клиента для этого теста
+        client = self.client
+        client.defaults.pop('HTTP_X_SERVICE_KEY', None)
+    
+        with patch.object(B2BClient, 'get_public_products') as mock_b2b:
+            # Имитируем, что B2B вернул 401 при отсутствии ключа
+            mock_b2b.side_effect = requests.exceptions.HTTPError('Unauthorized')
+            mock_b2b.side_effect.response = MagicMock()
+            mock_b2b.side_effect.response.status_code = 401
+    
+            url = reverse('app:products-list')
+            response = client.get(url)
+    
+&gt;           self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+E           AssertionError: 500 != 401
+
+app\tests.py:437: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_b2b_unavailable_returns_empty_facets" file="app\tests.py" line="389" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_missing_category_id_returns_400" file="app\tests.py" line="405" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/facets
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_return_counts_per_filter_value" file="app\tests.py" line="335" time="0.002"><failure message="AssertionError: UUID('123e4567-e89b-12d3-a456-426614174001') != '123e4567-e89b-12d3-a456-426614174001'">self = &lt;app.tests.CatalogAPITests testMethod=test_facets_return_counts_per_filter_value&gt;
+
+    def test_facets_return_counts_per_filter_value(self):
+        """
+        Фасеты должны возвращать корректные подсчёты для каждого значения фильтра.
+        Соответствует требованию: facets_return_counts_per_filter_value
+        """
+        with patch.object(B2BClient, 'get_facets') as mock_facets:
+            mock_facets.return_value = self.mock_b2b_facets_response
+    
+            # Предполагаем, что эндпоинт /api/v1/catalog/facets добавлен в urls.py
+            url = reverse('app:facets')  # reverse('app:facets') если добавите name
+            response = self.client.get(url, {
+                'category_id': self.category_id,
+                'filter[brand]': 'Apple'
+            })
+    
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+    
+            self.assertIn('facets', data)
+            self.assertEqual(data['category_id'], self.category_id)
+    
+            # Проверка структуры фасетов
+            facets = {f['name']: f for f in data['facets']}
+            self.assertIn('brand', facets)
+            self.assertIn('color', facets)
+    
+            # Проверка подсчётов для бренда
+            brand_values = {v['value']: v['count'] for v in facets['brand']['values']}
+            self.assertEqual(brand_values['Apple'], 124)
+            self.assertEqual(brand_values['Samsung'], 98)
+    
+            # Проверка, что B2B вызван с правильными параметрами
+            mock_facets.assert_called_once()
+            call_kwargs = mock_facets.call_args[1]
+&gt;           self.assertEqual(call_kwargs['category_id'], self.category_id)
+E           AssertionError: UUID('123e4567-e89b-12d3-a456-426614174001') != '123e4567-e89b-12d3-a456-426614174001'
+
+app\tests.py:370: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_without_filters_returns_all_counts" file="app\tests.py" line="372" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_invalid_limit_returns_400" file="app\tests.py" line="249" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_invalid_offset_returns_400" file="app\tests.py" line="263" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_invalid_sort_returns_400" file="app\tests.py" line="229" time="0.002"><failure message="AssertionError: False is not true : Expected allowed sort values in error message, got: {'sort': ['&quot;invalid_sort_value&quot; is not a valid choice.']}">self = &lt;app.tests.CatalogAPITests testMethod=test_invalid_sort_returns_400&gt;
+
+    def test_invalid_sort_returns_400(self):
+        """
+        Невалидный параметр sort должен вернуть 400 с перечислением допустимых значений.
+        Соответствует требованию: invalid_sort_returns_400
+        """
+        url = reverse('app:products-list')
+        response = self.client.get(url, {'sort': 'invalid_sort_value'})
+    
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        data = response.json()
+    
+        self.assertEqual(data['code'], 'INVALID_REQUEST')
+        self.assertIn('message', data)
+        # Сообщение должно содержать допустимые значения для отладки
+        message = data['message']
+&gt;       self.assertTrue(
+            any(val in message for val in ['price_asc', 'price_desc', 'popularity', 'new']),
+            f"Expected allowed sort values in error message, got: {data['message']}"
+        )
+E       AssertionError: False is not true : Expected allowed sort values in error message, got: {'sort': ['"invalid_sort_value" is not a valid choice.']}
+
+app\tests.py:245: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

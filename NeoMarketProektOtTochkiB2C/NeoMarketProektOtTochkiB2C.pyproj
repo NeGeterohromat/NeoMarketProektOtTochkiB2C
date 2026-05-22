@@ -5,7 +5,7 @@
     <Name>NeoMarketProektOtTochkiB2C</Name>
     <RootNamespace>NeoMarketProektOtTochkiB2C</RootNamespace>
     <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
-    <TestFramework>unittest</TestFramework>
+    <TestFramework>pytest</TestFramework>
     <UnitTestPattern>test*.py</UnitTestPattern>
     <UnitTestRootDirectory>.</UnitTestRootDirectory>
   </PropertyGroup>
@@ -74,6 +74,7 @@
     <Folder Include="NeoMarketProektOtTochkiB2C\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="pytest.ini" />
     <Content Include="requirements.txt" />
     <Content Include="db.sqlite3" />
     <Content Include="app\static\app\content\bootstrap.css" />

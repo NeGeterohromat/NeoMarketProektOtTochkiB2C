@@ -61,28 +61,34 @@ class CatalogProductsView(APIView):
         # 1. Валидация параметров
         serializer = CatalogListQuerySerializer(data=request.query_params)
         if not serializer.is_valid():
+            # 2. Валидация sort (дополнительная, т.к. enum в serializer может не покрыть всё)
+            if request.query_params.get('sort') and request.query_params.get('sort') not in ALLOWED_SORT_VALUES:
+                return error_response(
+                    code="INVALID_REQUEST",
+                    message=f'Invalid sort parameter. Allowed: {", ".join(ALLOWED_SORT_VALUES)}',
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             return error_response(
-                code='INVALID_REQUEST',
+                code="INVALID_REQUEST",
                 message=serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST
             )
         
         params = serializer.validated_data
         
-        # 2. Валидация sort (дополнительная, т.к. enum в serializer может не покрыть всё)
-        if params.get('sort') and params['sort'] not in ALLOWED_SORT_VALUES:
-            return error_response(
-                code='INVALID_REQUEST',
-                message=f'Invalid sort parameter. Allowed: {", ".join(ALLOWED_SORT_VALUES)}',
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        filters = {}
+        for key, value in request.GET.items():
+            if key.startswith('filter[') and key.endswith(']'):
+                filter_key = key[7:-1]  # Извлекаем brand из filter[brand]
+                filters[filter_key] = value
         
         # 3. Вызов B2B
         b2b_client = B2BClient()
         try:
             result = b2b_client.get_public_products(
                 category_id=params.get('category_id'),
-                filters=params.get('filter'),  # deepObject: filter[price_min]=...
+                filters=filters,  # deepObject: filter[price_min]=...
                 sort=params.get('sort'),
                 limit=params.get('limit', 20),
                 offset=params.get('offset', 0),
@@ -122,11 +128,17 @@ class CatalogFacetsView(APIView):
         
         params = serializer.validated_data
         b2b_client = B2BClient()
-        
+
+        filters = {}
+        for key, value in request.GET.items():
+            if key.startswith('filter[') and key.endswith(']'):
+                filter_key = key[7:-1]  # Извлекаем brand из filter[brand]
+                filters[filter_key] = value
+
         try:
             facets = b2b_client.get_facets(
                 category_id=params['category_id'],
-                filters=params.get('filter')
+                filters=filters
             )
             return Response(facets, status=status.HTTP_200_OK)
         except B2BUnavailableError:

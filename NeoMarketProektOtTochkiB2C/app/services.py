@@ -1,20 +1,29 @@
-import httpx
+import requests
 from django.conf import settings
 from django.core.cache import cache
 from .exceptions import B2BUnavailableError
 
 class B2BClient:
-    """Прокси-клиент для вызовов B2B-сервиса"""
+    """Прокси-клиент для вызовов B2B-сервиса (синхронная версия)"""
     
     def __init__(self):
         self.base_url = settings.B2B_BASE_URL
         self.service_key = settings.B2B_SERVICE_KEY
-        self.timeout = httpx.Timeout(10.0, connect=5.0)
+        self.timeout = (5.0, 10.0)  # (connect timeout, read timeout) в секундах
     
     def _get_headers(self) -> dict:
         return {'X-Service-Key': self.service_key}
+
+    def _call_b2b(self,url,params):
+        response = requests.get(
+            url, 
+            params=params, 
+            headers=self._get_headers(),
+            timeout=self.timeout
+        )
+        return response.json()
     
-    async def get_public_products(
+    def get_public_products(
         self,
         category_id: str = None,
         filters: dict = None,
@@ -23,42 +32,50 @@ class B2BClient:
         offset: int = 0,
         search: str = None
     ) -> dict:
-        """Вызов GET /api/v1/public/products из B2B"""
+        """Вызов GET /api/v1/public/products из B2B (синхронный)"""
         params = {
             'limit': limit,
             'offset': offset,
-            'category_id': category_id,
-            'search': search,
-            'sort': self._map_sort_param(sort),
         }
+        
+        if category_id:
+            params['category_id'] = category_id
+        if search:
+            params['search'] = search
+        if sort:
+            params['sort'] = self._map_sort_param(sort)
+        
         # Преобразуем filter[field]=value в flat params для B2B
         if filters:
             for key, value in filters.items():
+                param_key = f'filters[{key}]'
                 if isinstance(value, list):
-                    params[f'filters[{key}]'] = value
+                    params[param_key] = value
                 else:
-                    params[f'filters[{key}]'] = [value]
+                    params[param_key] = [value]
         
-        url = f'{self.base_url}/api/v1/public/products'
         
         try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.get(url, params=params, headers=self._get_headers())
-                response.raise_for_status()
-                return self._transform_products_response(response.json())
-        except httpx.ConnectError:
-            raise B2BUnavailableError('B2B service unavailable')
-        except httpx.HTTPStatusError as e:
+            b2b_answer = self._call_b2b(f'{self.base_url}/api/v1/public/products',params)
+            return self._transform_products_response(b2b_answer)
+            
+        except requests.exceptions.ConnectionError:
+            raise B2BUnavailableError('B2B service unavailable - connection error')
+        except requests.exceptions.Timeout:
+            raise B2BUnavailableError('B2B service timeout')
+        except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
-                raise ValueError('Category not found')  # Для обработки 404 на уровне view
-            raise
+                raise ValueError('Category not found')
+            raise B2BUnavailableError(f'B2B HTTP error: {e.response.status_code}')
+        except requests.exceptions.RequestException as e:
+            raise B2BUnavailableError(f'B2B service error: {e}')
     
-    async def get_facets(
+    def get_facets(
         self,
         category_id: str,
         filters: dict = None
     ) -> dict:
-        """Получение фасетов с кэшированием"""
+        """Получение фасетов с кэшированием (синхронный)"""
         # Ключ кэша: категория + отсортированные фильтры
         cache_key = f'facets:{category_id}:{hash(frozenset((k, tuple(v) if isinstance(v,list) else v) for k,v in (filters or {}).items()))}'
         
@@ -68,30 +85,32 @@ class B2BClient:
         params = {'category_id': category_id}
         if filters:
             for key, value in filters.items():
-                params[f'filters[{key}]'] = value if isinstance(value, list) else [value]
+                param_key = f'filters[{key}]'
+                if isinstance(value, list):
+                    params[param_key] = value
+                else:
+                    params[param_key] = [value]
         
-        url = f'{self.base_url}/api/v1/public/products/facets'  # ⚠️ Нужно добавить в b2b.yaml!
+        url = f'{self.base_url}/api/v1/public/products/facets'
         
-        try:
-            async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.get(url, params=params, headers=self._get_headers())
-                response.raise_for_status()
-                data = response.json()
-                cache.set(cache_key, data, settings.FACETS_CACHE_TTL)
-                return data
-        except httpx.ConnectError:
+        try:            
+            data = self._call_b2b(url,params)
+            cache.set(cache_key, data, settings.FACETS_CACHE_TTL)
+            return data
+            
+        except requests.exceptions.RequestException:
             # При недоступности B2B возвращаем пустые фасеты (не блокируем каталог)
             return {'facets': []}
     
     def _map_sort_param(self, sort: str) -> str:
-        """Маппинг сортировки b2c -> b2b"""
+        """Маппинг сортировки b2c -> b2b, так как эти параметры разные в спеках"""
         mapping = {
             'price_asc': 'price_asc',
             'price_desc': 'price_desc', 
             'popularity': 'popular',
-            'new': 'created_desc',  # b2c: new -> b2b: created_desc
+            'new': 'created_desc',
         }
-        return mapping.get(sort, 'popular')  # default
+        return mapping.get(sort, 'popular')
     
     def _transform_products_response(self, b2b_data: dict) -> dict:
         """Трансформация ответа B2B в формат b2c.yaml: PaginatedCatalogProducts"""
@@ -104,21 +123,20 @@ class B2BClient:
     
     def _transform_product_card(self, b2b_item: dict) -> dict:
         """Трансформация ProductPublicShortResponse -> CatalogProductCard"""
-        # Берём минимальную цену из SKU, определяем наличие
         skus = b2b_item.get('skus', [])
         min_price = min((sku['price'] - sku.get('discount', 0) for sku in skus), default=None)
         has_stock = any(sku.get('active_quantity', 0) > 0 for sku in skus)
         
         return {
             'id': b2b_item['id'],
-            'name': b2b_item['title'],  # b2b: title -> b2c: name
+            'name': b2b_item['title'],
             'slug': b2b_item.get('slug'),
-            'category': {'id': b2b_item['category_id'], 'name': '', 'level': 0, 'path': []},  # ⚠️ Нужно джойнить с категориями
+            'category': {'id': b2b_item['category_id'], 'name': '', 'level': 0, 'path': []},
             'min_price': min_price,
-            'old_price': None,  # Можно вычислять из discount
+            'old_price': None,
             'has_stock': has_stock,
-            'rating': None,  # ⚠️ Добавить в b2b, если нужно
+            'rating': None,
             'reviews_count': 0,
             'images': b2b_item.get('images', []),
-            'seller': {'id': b2b_item['seller_id'], 'display_name': ''},  # ⚠️ Нужен эндпоинт для имени продавца
+            'seller': {'id': b2b_item['seller_id'], 'display_name': ''},
         }
