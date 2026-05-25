@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="12" time="0.584" timestamp="2026-05-22T18:02:29.887712+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_b2b_category_not_found_returns_404" file="app\tests.py" line="306" time="0.214"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_b2b_unavailable_returns_502" file="app\tests.py" line="278" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Bad Gateway: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_empty_category_returns_200_with_empty_items" file="app\tests.py" line="188" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_no_filters_returns_default_sorted_products" file="app\tests.py" line="211" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_returns_filtered_sorted_products" file="app\tests.py" line="131" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_b2b_unavailable_returns_empty_facets" file="app\tests.py" line="377" time="0.008"><failure message="AssertionError: Lists differ: [{'name': 'brand', 'values': [{'value': 'A[185 chars]0}]}] != []&#10;&#10;First list contains 2 additional elements.&#10;First extra element 0:&#10;{'name': 'brand', 'values': [{'value': 'Apple', 'count': 124}, {'value': 'Samsung', 'count': 98}, {'value': 'Xiaomi', 'count': 76}]}&#10;&#10;+ []&#10;- [{'name': 'brand',&#10;-   'values': [{'count': 124, 'value': 'Apple'},&#10;-              {'count': 98, 'value': 'Samsung'},&#10;-              {'count': 76, 'value': 'Xiaomi'}]},&#10;-  {'name': 'color',&#10;-   'values': [{'count': 60, 'value': 'черный'},&#10;-              {'count': 40, 'value': 'белый'}]}]">self = &lt;app.tests.CatalogAPITests testMethod=test_facets_b2b_unavailable_returns_empty_facets&gt;
+
+    def test_facets_b2b_unavailable_returns_empty_facets(self):
+        """
+        При недоступности B2B фасеты должны вернуть пустой список (не блокировать каталог).
+        """
+        with patch.object(B2BClient, '_call_b2b') as mock_facets:
+            from app.exceptions import B2BUnavailableError
+            mock_facets.side_effect = B2BUnavailableError('B2B unavailable')
+    
+            url = reverse('app:facets')
+            response = self.client.get(url, {'category_id': self.category_id})
+    
+            # Фасеты не критичны — возвращаем 200 с пустыми данными
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+&gt;           self.assertEqual(data['facets'], [])
+E           AssertionError: Lists differ: [{'name': 'brand', 'values': [{'value': 'A[185 chars]0}]}] != []
+E           
+E           First list contains 2 additional elements.
+E           First extra element 0:
+E           {'name': 'brand', 'values': [{'value': 'Apple', 'count': 124}, {'value': 'Samsung', 'count': 98}, {'value': 'Xiaomi', 'count': 76}]}
+E           
+E           + []
+E           - [{'name': 'brand',
+E           -   'values': [{'count': 124, 'value': 'Apple'},
+E           -              {'count': 98, 'value': 'Samsung'},
+E           -              {'count': 76, 'value': 'Xiaomi'}]},
+E           -  {'name': 'color',
+E           -   'values': [{'count': 60, 'value': 'черный'},
+E           -              {'count': 40, 'value': 'белый'}]}]
+
+app\tests.py:392: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_missing_category_id_returns_400" file="app\tests.py" line="393" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/facets
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_return_counts_per_filter_value" file="app\tests.py" line="323" time="0.006"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_without_filters_returns_all_counts" file="app\tests.py" line="360" time="0.004"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_invalid_limit_returns_400" file="app\tests.py" line="252" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_invalid_offset_returns_400" file="app\tests.py" line="266" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_invalid_sort_returns_400" file="app\tests.py" line="232" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

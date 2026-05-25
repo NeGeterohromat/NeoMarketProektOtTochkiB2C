@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.539" timestamp="2026-05-22T16:25:12.684377+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_catalog_returns_filtered_sorted_products" file="app\tests.py" line="131" time="0.213"><failure message="KeyError: 'category_id'">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_returns_filtered_sorted_products&gt;
+
+    def test_catalog_returns_filtered_sorted_products(self):
+        """
+        Happy path: фильтрация по категории и бренду + сортировка по цене.
+        Проверяет, что B2C корректно проксирует запрос к B2B и трансформирует ответ.
+        """
+        # Подготовка мока для B2BClient._call_b2b
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_products_response
+    
+            # Запрос с фильтрами и сортировкой
+            url = reverse('app:products-list')  # /api/v1/catalog/products
+            response = self.client.get(url, {
+                'filter[category_id]': self.category_id,
+                'filter[brand]': 'Apple',
+                'filter[price_min]': '10000',
+                'filter[price_max]': '15000000',
+                'sort': 'price_asc',
+                'limit': 20,
+                'offset': 0,
+                'q': 'iphone'
+            })
+    
+            # Assert: статус и структура ответа
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+    
+            self.assertIn('items', data)
+            self.assertIn('total_count', data)
+            self.assertIn('limit', data)
+            self.assertIn('offset', data)
+    
+            self.assertEqual(data['total_count'], 2)
+            self.assertEqual(data['limit'], 5)
+            self.assertEqual(data['offset'], 0)
+            self.assertEqual(len(data['items']), 2)
+    
+            # Assert: трансформация полей B2B → B2C
+            product = data['items'][0]
+            print(product)
+            self.assertEqual(product['id'], self.product_id)
+            self.assertEqual(product['name'], 'iPhone 15 Pro Max')  # B2B: title → B2C: name
+            self.assertEqual(product['min_price'], 12999000)  # вычислено из SKU
+            self.assertTrue(product['has_stock'])  # active_quantity &gt; 0
+            self.assertIn('images', product)
+    
+            # Assert: B2BClient вызван с правильными параметрами
+            mock_b2b.assert_called_once()
+            call_kwargs = mock_b2b.call_args[1]
+&gt;           self.assertEqual(call_kwargs['category_id'], self.category_id)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           KeyError: 'category_id'
+
+app\tests.py:180: KeyError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+{'id': '770e8400-e29b-41d4-a716-446655440002', 'name': 'iPhone 15 Pro Max', 'slug': 'iphone-15-pro-max', 'category': {'id': '123e4567-e89b-12d3-a456-426614174001', 'name': '', 'level': 0, 'path': []}, 'min_price': 12999000, 'old_price': None, 'has_stock': True, 'rating': None, 'reviews_count': 0, 'images': [{'id': 'img-1', 'url': 'https://cdn.neomarket.ru/iphone15.jpg', 'ordering': 0}], 'seller': {'id': 'seller-uuid', 'display_name': ''}}
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

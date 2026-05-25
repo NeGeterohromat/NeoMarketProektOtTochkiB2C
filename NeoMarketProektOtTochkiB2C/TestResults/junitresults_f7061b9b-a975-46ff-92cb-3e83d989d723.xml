@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.574" timestamp="2026-05-22T17:14:53.890325+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_facets_return_counts_per_filter_value" file="app\tests.py" line="335" time="0.228"><failure message="AssertionError: UUID('123e4567-e89b-12d3-a456-426614174001') != '123e4567-e89b-12d3-a456-426614174001'">self = &lt;app.tests.CatalogAPITests testMethod=test_facets_return_counts_per_filter_value&gt;
+
+    def test_facets_return_counts_per_filter_value(self):
+        """
+        Фасеты должны возвращать корректные подсчёты для каждого значения фильтра.
+        Соответствует требованию: facets_return_counts_per_filter_value
+        """
+        with patch.object(B2BClient, '_call_b2b') as mock_facets:
+            mock_facets.return_value = self.mock_b2b_facets_response
+    
+            # Предполагаем, что эндпоинт /api/v1/catalog/facets добавлен в urls.py
+            url = reverse('app:facets')  # reverse('app:facets') если добавите name
+            response = self.client.get(url, {
+                'category_id': self.category_id,
+                'filter[brand]': 'Apple'
+            })
+    
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+    
+            self.assertIn('facets', data)
+            self.assertEqual(data['category_id'], self.category_id)
+    
+            # Проверка структуры фасетов
+            facets = {f['name']: f for f in data['facets']}
+            self.assertIn('brand', facets)
+            self.assertIn('color', facets)
+    
+            # Проверка подсчётов для бренда
+            brand_values = {v['value']: v['count'] for v in facets['brand']['values']}
+            self.assertEqual(brand_values['Apple'], 124)
+            self.assertEqual(brand_values['Samsung'], 98)
+    
+            # Проверка, что B2B вызван с правильными параметрами
+            mock_facets.assert_called_once()
+            call_kwargs = mock_facets.call_args[0][1]
+            print(call_kwargs)
+&gt;           self.assertEqual(call_kwargs['category_id'], self.category_id)
+E           AssertionError: UUID('123e4567-e89b-12d3-a456-426614174001') != '123e4567-e89b-12d3-a456-426614174001'
+
+app\tests.py:371: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+{'category_id': UUID('123e4567-e89b-12d3-a456-426614174001'), 'filters[brand]': ['Apple']}
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>
