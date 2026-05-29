@@ -369,11 +369,14 @@ class CatalogAPITests(APITestCase):
         """
         with patch.object(B2BClient, '_call_b2b_by_func') as mock_b2b:
             # B2BClient должен выбрасывать ValueError для 404
-            the_response = Mock(spec=Response)
-            the_response.json.return_value = {}
-            the_response.status_code = 404
+            real_response = requests.Response()
+            real_response.status_code = 404
+            real_response.reason = "Internal Server Error"
+            real_response.url = "https://api.example.com/data"
+            real_response._content = b'{"detail": "server crashed"}'
+            real_response.encoding = 'utf-8'
 
-            mock_b2b.side_effect = the_response
+            mock_b2b.return_value = real_response
             
             url = reverse('app:products-list')
             response = self.client.get(url, {'filter[category_id]': 'non-existent-uuid'})
