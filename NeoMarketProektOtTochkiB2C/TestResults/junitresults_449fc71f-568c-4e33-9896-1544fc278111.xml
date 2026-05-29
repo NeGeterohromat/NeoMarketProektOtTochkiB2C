@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.566" timestamp="2026-05-29T18:28:47.026690+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_b2b_category_not_found_returns_404" file="app\tests.py" line="365" time="0.223"><failure message="AssertionError: 500 != 404">self = &lt;app.tests.CatalogAPITests testMethod=test_b2b_category_not_found_returns_404&gt;
+
+    def test_b2b_category_not_found_returns_404(self):
+        """
+        Если B2B вернул 404 (категория не найдена), B2C должен проксировать 404.
+        """
+        with patch.object(B2BClient, '_call_b2b_by_func') as mock_b2b:
+            # B2BClient должен выбрасывать ValueError для 404
+            mock_b2b.side_effect = responses.Response(status=404, json={"code":"NOT_FOUND"},method='GET',url='')
+    
+            url = reverse('app:products-list')
+            response = self.client.get(url, {'filter[category_id]': 'non-existent-uuid'})
+    
+&gt;           self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+E           AssertionError: 500 != 404
+
+app\tests.py:377: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

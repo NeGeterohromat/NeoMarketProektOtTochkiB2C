@@ -4,7 +4,8 @@ when you run "manage.py test".
 """
 
 import requests
-from unittest.mock import patch, MagicMock
+from requests.models import Response
+from unittest.mock import patch, MagicMock, Mock
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -159,8 +160,8 @@ class CatalogAPITests(APITestCase):
     }
   ],
   "total_count": 2,
-  "limit": 2,
-  "offset": 1
+  "limit": 30,
+  "offset": 0
 }
         
         # Моковый ответ для фасетов
@@ -194,7 +195,7 @@ class CatalogAPITests(APITestCase):
         """
         # Подготовка мока для B2BClient._call_b2b
         with patch.object(B2BClient, '_call_b2b') as mock_b2b:
-            mock_b2b.return_value = self.mock_b2b_products_response
+            mock_b2b.side_effect = [self.mock_b2b_products_response,self.mock_b2b_products_data_response]
             
             # Запрос с фильтрами и сортировкой
             url = reverse('app:products-list')  # /api/v1/catalog/products
@@ -219,21 +220,20 @@ class CatalogAPITests(APITestCase):
             self.assertIn('offset', data)
             
             self.assertEqual(data['total_count'], 2)
-            self.assertEqual(data['limit'], 5)
+            self.assertEqual(data['limit'], 30)
             self.assertEqual(data['offset'], 0)
             self.assertEqual(len(data['items']), 2)
             
             # Assert: трансформация полей B2B → B2C
             product = data['items'][0]
             self.assertEqual(product['id'], self.product_id)
-            self.assertEqual(product['name'], 'iPhone 15 Pro Max')  # B2B: title → B2C: name
-            self.assertEqual(product['min_price'], 12999000)  # вычислено из SKU
+            self.assertEqual(product['name'], 'Iphone 15 Black 256GB')  # B2B: title → B2C: name
+            self.assertEqual(product['min_price'], 65000)  # вычислено из SKU
             self.assertTrue(product['has_stock'])  # active_quantity > 0
             self.assertIn('images', product)
             
             # Assert: B2BClient вызван с правильными параметрами
-            mock_b2b.assert_called_once()
-            call_kwargs = mock_b2b.call_args[0][1]
+            call_kwargs = mock_b2b.call_args_list[0][0][1]
             self.assertEqual(call_kwargs['filters[category_id]'][0], self.category_id)
             self.assertEqual(call_kwargs['filters[brand]'][0], 'Apple')
             self.assertEqual(call_kwargs['filters[price_min]'][0], '10000')
@@ -272,6 +272,7 @@ class CatalogAPITests(APITestCase):
         Запрос без фильтров должен вернуть товары с сортировкой по умолчанию (popularity).
         """
         with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            #сначала запрос для получения товаров, затем запрос для получения информации о has_stock
             mock_b2b.side_effect = [self.mock_b2b_products_response,self.mock_b2b_products_data_response]
             
             url = reverse('app:products-list')
@@ -366,9 +367,13 @@ class CatalogAPITests(APITestCase):
         """
         Если B2B вернул 404 (категория не найдена), B2C должен проксировать 404.
         """
-        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+        with patch.object(B2BClient, '_call_b2b_by_func') as mock_b2b:
             # B2BClient должен выбрасывать ValueError для 404
-            mock_b2b.side_effect = ValueError('Category not found')
+            the_response = Mock(spec=Response)
+            the_response.json.return_value = {}
+            the_response.status_code = 404
+
+            mock_b2b.side_effect = the_response
             
             url = reverse('app:products-list')
             response = self.client.get(url, {'filter[category_id]': 'non-existent-uuid'})

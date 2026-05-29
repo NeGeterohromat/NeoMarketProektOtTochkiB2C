@@ -15,24 +15,22 @@ class B2BClient:
     def _get_headers(self) -> dict:
         return {'X-Service-Key': self.service_key}
 
+    def _call_b2b_by_func(self,url,params,data,func):
+        return func(
+                    url, 
+                    params=params, 
+                    data=data,
+                    headers=self._get_headers(),
+                    timeout=self.timeout
+                )
+
     def _call_b2b(self,url,params,data=None,method='GET'):
         if method=='GET' or method=='POST':
             if method=='GET':
-                response = requests.get(
-                    url, 
-                    params=params, 
-                    data=data,
-                    headers=self._get_headers(),
-                    timeout=self.timeout
-                )
+                response = self._call_b2b_by_func(url,params,data,requests.get)
             if method=='POST':
-                response = requests.post(
-                    url, 
-                    params=params, 
-                    data=data,
-                    headers=self._get_headers(),
-                    timeout=self.timeout
-                )
+                response = self._call_b2b_by_func(url,params,data,requests.post)
+            response.raise_for_status()
             return response.json()
         raise ValueError(f'There are no urls with method {method}')
     
@@ -131,8 +129,9 @@ class B2BClient:
         data = {'product_ids': [item['id'] for item in b2b_data.get('items', [])]}
         url = f'{self.base_url}/api/v1/public/products/batch'
         params = {}
-        products_data = self._call_b2b(url=url,params=params,data=data,method='POST')
-        has_stock_dict = dict([[dat['id'],sum([sku['stock_quantity'] for sku in dat['skus']])>0] for dat in products_data])
+        if len(data['product_ids'])>0:
+            products_data = self._call_b2b(url=url,params=params,data=data,method='POST')
+            has_stock_dict = dict([[dat['id'],sum([sku['stock_quantity'] for sku in dat['skus']])>0] for dat in products_data])
         #has_stock
 
         return {
