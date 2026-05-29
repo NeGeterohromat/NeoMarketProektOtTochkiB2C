@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.524" timestamp="2026-05-29T15:33:40.241465+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_catalog_no_filters_returns_default_sorted_products" file="app\tests.py" line="162" time="0.209"><failure message="AssertionError: 500 != 200">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_no_filters_returns_default_sorted_products&gt;
+
+    def test_catalog_no_filters_returns_default_sorted_products(self):
+        """
+        Запрос без фильтров должен вернуть товары с сортировкой по умолчанию (popularity).
+        """
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_products_response
+    
+            url = reverse('app:products-list')
+            response = self.client.get(url)  # без параметров
+    
+&gt;           self.assertEqual(response.status_code, status.HTTP_200_OK)
+E           AssertionError: 500 != 200
+
+app\tests.py:173: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+vnkgnv 'seller_id'
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

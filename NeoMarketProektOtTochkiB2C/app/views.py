@@ -107,6 +107,7 @@ class CatalogProductsView(APIView):
             )
         except Exception as e:
             # Логирование ошибки
+            print('vnkgnv',e)
             return error_response(code='INTERNAL_ERROR', message='Internal server error', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 

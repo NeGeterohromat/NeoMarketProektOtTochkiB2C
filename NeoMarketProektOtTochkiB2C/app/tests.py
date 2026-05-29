@@ -26,84 +26,142 @@ class CatalogAPITests(APITestCase):
         self.client.defaults['HTTP_X_SERVICE_KEY'] = self.service_key
         self.category_id = '123e4567-e89b-12d3-a456-426614174001'
         self.product_id = '770e8400-e29b-41d4-a716-446655440002'
+
+        # Моковый ответ от B2B для списка данных о товарах
+        self.mock_b2b_products_data_response = [
+  {
+    "id": self.product_id,
+    "seller_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "category_id": self.category_id,
+    "title": "Iphone 15 Black 256GB",
+    "slug": "IPHONE15BLACK256GB",
+    "description": "string",
+    "status": "CREATED",
+    "images": [
+      {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "url": "https://cdn.neomarket.ru/images/iphone15.jpg",
+        "ordering": 0
+      }
+    ],
+    "characteristics": [
+      {
+        "name": "Бренд",
+        "value": "Apple",
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      }
+    ],
+    "skus": [
+      {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "product_id": self.product_id,
+        "name": "string",
+        "price": 0,
+        "discount": 0,
+        "stock_quantity": 12,
+        "active_quantity": 0,
+        "article": "string",
+        "images": [
+          {
+            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "url": "string",
+            "ordering": 0
+          }
+        ],
+        "characteristics": [
+          {
+            "name": "Бренд",
+            "value": "Apple",
+            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+          }
+        ]
+      }
+    ],
+    "created_at": "2026-05-29T11:14:45.405Z",
+    "updated_at": "2026-05-29T11:14:45.405Z"
+  },
+  {
+    "id": '770e8400-e29b-41d4-a716-446655440003',
+    "seller_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "category_id": self.category_id,
+    "title": "Iphone 15 Black 256GB",
+    "slug": "IPHONE15BLACK256GB",
+    "description": "string",
+    "status": "CREATED",
+    "images": [
+      {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "url": "https://cdn.neomarket.ru/images/iphone15.jpg",
+        "ordering": 0
+      }
+    ],
+    "characteristics": [
+      {
+        "name": "Бренд",
+        "value": "Apple",
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      }
+    ],
+    "skus": [
+      {
+        "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+        "product_id": self.product_id,
+        "name": "string",
+        "price": 0,
+        "discount": 0,
+        "stock_quantity": 0,
+        "active_quantity": 0,
+        "article": "string",
+        "images": [
+          {
+            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            "url": "string",
+            "ordering": 0
+          }
+        ],
+        "characteristics": [
+          {
+            "name": "Бренд",
+            "value": "Apple",
+            "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+          }
+        ]
+      }
+    ],
+    "created_at": "2026-05-29T11:14:45.405Z",
+    "updated_at": "2026-05-29T11:14:45.405Z"
+  }
+
+]
         
         # Моковый ответ от B2B для списка товаров
         self.mock_b2b_products_response = {
-            'items': [
-                {
-                    'id': self.product_id,
-                    'title': 'iPhone 15 Pro Max',
-                    'slug': 'iphone-15-pro-max',
-                    'category_id': self.category_id,
-                    'seller_id': 'seller-uuid',
-                    'images': [
-                        {'id': 'img-1', 'url': 'https://cdn.neomarket.ru/iphone15.jpg', 'ordering': 0}
-                    ],
-                    'skus': [
-                        {
-                            'id': 'sku-1',
-                            'name': '256GB Black',
-                            'price': 12999000,
-                            'discount': 0,
-                            'active_quantity': 5,
-                            'stock_quantity': 10,
-                            'article': 'APL-IP15PM-256-BLK',
-                            'images': [],
-                            'characteristics': []
-                        },
-                        {
-                            'id': 'sku-3',
-                            'name': '256GB Red',
-                            'price': 12999000,
-                            'discount': 0,
-                            'active_quantity': 5,
-                            'stock_quantity': 10,
-                            'article': 'APL-IP15PM-256-RED',
-                            'images': [],
-                            'characteristics': []
-                        }
-                    ],
-                    'characteristics': [
-                        {'id': 'char-1', 'name': 'Бренд', 'value': 'Apple'}
-                    ],
-                    'status': 'MODERATED',
-                    'created_at': '2024-01-01T00:00:00Z',
-                    'updated_at': '2024-01-01T00:00:00Z'
-                },
-                {
-                    'id': '770e8400-e29b-41d4-a716-446655440003',
-                    'title': 'iPhone 17 Pro Max',
-                    'slug': 'iphone-17-pro-max',
-                    'category_id': self.category_id,
-                    'seller_id': 'seller-uuid',
-                    'images': [
-                        {'id': 'img-2', 'url': 'https://cdn.neomarket.ru/iphone17.jpg', 'ordering': 0}
-                    ],
-                    'skus': [
-                        {
-                            'id': 'sku-2',
-                            'name': '256GB Black',
-                            'price': 12999000,
-                            'discount': 0,
-                            'active_quantity': 5,
-                            'stock_quantity': 10,
-                            'article': 'APL-IP17PM-256-BLK',
-                            'images': [],
-                            'characteristics': []
-                        }
-                    ],
-                    'characteristics': [
-                        {'id': 'char-2', 'name': 'Бренд', 'value': 'Apple'}
-                    ],
-                    'status': 'MODERATED',
-                    'created_at': '2024-01-01T00:00:00Z',
-                    'updated_at': '2024-01-01T00:00:00Z'
-                }
-            ],
-            'total_count': 2,
-            'limit': 5,
-            'offset': 0
-        }
+  "items": [
+    {
+      "id": self.product_id,
+      "title": "Iphone 15 Black 256GB",
+      "slug": "IPHONE15BLACK256GB",
+      "status": "CREATED",
+      "category_id": self.category_id,
+      "min_price": 65000,
+      "cover_image": "https://cdn.neomarket.ru/images/iphone15.jpg",
+      "created_at": "2026-05-29T10:19:20.615Z"
+    },
+    {
+      "id": '770e8400-e29b-41d4-a716-446655440003', #other id
+      "title": "Iphone 16 Black 256GB",
+      "slug": "IPHONE16BLACK256GB",
+      "status": "CREATED",
+      "category_id": '123e4567-e89b-12d3-a456-426614174002', #other id
+      "min_price": 67000,
+      "cover_image": "https://cdn.neomarket.ru/images/iphone16.jpg",
+      "created_at": "2026-05-28T10:19:20.615Z"
+    }
+  ],
+  "total_count": 2,
+  "limit": 2,
+  "offset": 1
+}
         
         # Моковый ответ для фасетов
         self.mock_b2b_facets_response = {
@@ -214,7 +272,7 @@ class CatalogAPITests(APITestCase):
         Запрос без фильтров должен вернуть товары с сортировкой по умолчанию (popularity).
         """
         with patch.object(B2BClient, '_call_b2b') as mock_b2b:
-            mock_b2b.return_value = self.mock_b2b_products_response
+            mock_b2b.side_effect = [self.mock_b2b_products_response,self.mock_b2b_products_data_response]
             
             url = reverse('app:products-list')
             response = self.client.get(url)  # без параметров
@@ -222,7 +280,7 @@ class CatalogAPITests(APITestCase):
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             
             # Проверка, что sort передан как 'popularity' (default из b2c.yaml)
-            call_kwargs = mock_b2b.call_args[0][1]
+            call_kwargs = mock_b2b.call_args_list[0][0][1]
             # в спеке b2b параметр sort ожидает: Available values : price_asc, price_desc, created_desc, popular
             # хотя в спеке b2c принимаются другие значения этого же параметра Available values : price_asc, price_desc, popularity, new
             # поэтому запрос к b2b именно с popular
