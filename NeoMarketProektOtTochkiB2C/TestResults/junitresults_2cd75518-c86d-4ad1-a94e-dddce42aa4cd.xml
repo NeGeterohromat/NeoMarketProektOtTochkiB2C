@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="146.137" timestamp="2026-05-29T17:51:23.074363+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_catalog_empty_category_returns_200_with_empty_items" file="app\tests.py" line="246" time="145.467"><failure message="AssertionError: 500 != 200">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_empty_category_returns_200_with_empty_items&gt;
+
+    def test_catalog_empty_category_returns_200_with_empty_items(self):
+        """
+        Edge case: категория существует, но товаров нет.
+        Должен вернуться 200 с пустым списком items.
+        """
+        empty_response = {
+            'items': [],
+            'total_count': 0,
+            'limit': 20,
+            'offset': 0
+        }
+    
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = empty_response
+    
+            url = reverse('app:products-list')
+            response = self.client.get(url, {'filter[category_id]': self.category_id})
+    
+&gt;           self.assertEqual(response.status_code, status.HTTP_200_OK)
+E           AssertionError: 500 != 200
+
+app\tests.py:265: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+vnkgnv string indices must be integers, not 'str'
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

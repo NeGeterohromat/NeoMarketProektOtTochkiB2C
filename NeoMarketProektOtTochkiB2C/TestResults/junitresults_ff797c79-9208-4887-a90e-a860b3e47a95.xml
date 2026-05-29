@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.560" timestamp="2026-05-29T18:08:26.974496+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_catalog_returns_filtered_sorted_products" file="app\tests.py" line="189" time="0.212"><failure message="AssertionError: Expected '_call_b2b' to have been called once. Called 2 times.&#10;Calls: [call('http://127.0.0.1:8000/api/v1/public/products', {'limit': 30, 'offset': 0, 'search': 'iphone', 'sort': 'price_asc', 'filters[category_id]': ['123e4567-e89b-12d3-a456-426614174001'], 'filters[brand]': ['Apple'], 'filters[price_min]': ['10000'], 'filters[price_max]': ['15000000']}),&#10; call(url='http://127.0.0.1:8000/api/v1/public/products/batch', params={}, data={'product_ids': ['770e8400-e29b-41d4-a716-446655440002', '770e8400-e29b-41d4-a716-446655440003']}, method='POST')].">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_returns_filtered_sorted_products&gt;
+
+    def test_catalog_returns_filtered_sorted_products(self):
+        """
+        Happy path: фильтрация по категории и бренду + сортировка по цене.
+        Проверяет, что B2C корректно проксирует запрос к B2B и трансформирует ответ.
+        """
+        # Подготовка мока для B2BClient._call_b2b
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.side_effect = [self.mock_b2b_products_response,self.mock_b2b_products_data_response]
+    
+            # Запрос с фильтрами и сортировкой
+            url = reverse('app:products-list')  # /api/v1/catalog/products
+            response = self.client.get(url, {
+                'filter[category_id]': self.category_id,
+                'filter[brand]': 'Apple',
+                'filter[price_min]': '10000',
+                'filter[price_max]': '15000000',
+                'sort': 'price_asc',
+                'limit': 30,
+                'offset': 0,
+                'q': 'iphone'
+            })
+    
+            # Assert: статус и структура ответа
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+    
+            self.assertIn('items', data)
+            self.assertIn('total_count', data)
+            self.assertIn('limit', data)
+            self.assertIn('offset', data)
+    
+            self.assertEqual(data['total_count'], 2)
+            self.assertEqual(data['limit'], 30)
+            self.assertEqual(data['offset'], 0)
+            self.assertEqual(len(data['items']), 2)
+    
+            # Assert: трансформация полей B2B → B2C
+            product = data['items'][0]
+            self.assertEqual(product['id'], self.product_id)
+            self.assertEqual(product['name'], 'Iphone 15 Black 256GB')  # B2B: title → B2C: name
+            self.assertEqual(product['min_price'], 65000)  # вычислено из SKU
+            self.assertTrue(product['has_stock'])  # active_quantity &gt; 0
+            self.assertIn('images', product)
+    
+            # Assert: B2BClient вызван с правильными параметрами
+&gt;           mock_b2b.assert_called_once()
+
+app\tests.py:235: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;MagicMock name='_call_b2b' id='2206309323152'&gt;
+
+    def assert_called_once(self):
+        """assert that the mock was called only once.
+        """
+        if not self.call_count == 1:
+            msg = ("Expected '%s' to have been called once. Called %s times.%s"
+                   % (self._mock_name or 'mock',
+                      self.call_count,
+                      self._calls_repr()))
+&gt;           raise AssertionError(msg)
+E           AssertionError: Expected '_call_b2b' to have been called once. Called 2 times.
+E           Calls: [call('http://127.0.0.1:8000/api/v1/public/products', {'limit': 30, 'offset': 0, 'search': 'iphone', 'sort': 'price_asc', 'filters[category_id]': ['123e4567-e89b-12d3-a456-426614174001'], 'filters[brand]': ['Apple'], 'filters[price_min]': ['10000'], 'filters[price_max]': ['15000000']}),
+E            call(url='http://127.0.0.1:8000/api/v1/public/products/batch', params={}, data={'product_ids': ['770e8400-e29b-41d4-a716-446655440002', '770e8400-e29b-41d4-a716-446655440003']}, method='POST')].
+
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\mock.py:918: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

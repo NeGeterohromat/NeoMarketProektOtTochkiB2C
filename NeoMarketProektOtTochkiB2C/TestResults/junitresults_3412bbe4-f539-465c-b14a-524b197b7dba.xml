@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.546" timestamp="2026-05-29T18:04:38.409093+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_catalog_returns_filtered_sorted_products" file="app\tests.py" line="189" time="0.213"><failure message="AssertionError: 'Iphone 15 Black 256GB' != 'iPhone 15 Pro Max'&#10;- Iphone 15 Black 256GB&#10;+ iPhone 15 Pro Max">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_returns_filtered_sorted_products&gt;
+
+    def test_catalog_returns_filtered_sorted_products(self):
+        """
+        Happy path: фильтрация по категории и бренду + сортировка по цене.
+        Проверяет, что B2C корректно проксирует запрос к B2B и трансформирует ответ.
+        """
+        # Подготовка мока для B2BClient._call_b2b
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.side_effect = [self.mock_b2b_products_response,self.mock_b2b_products_data_response]
+    
+            # Запрос с фильтрами и сортировкой
+            url = reverse('app:products-list')  # /api/v1/catalog/products
+            response = self.client.get(url, {
+                'filter[category_id]': self.category_id,
+                'filter[brand]': 'Apple',
+                'filter[price_min]': '10000',
+                'filter[price_max]': '15000000',
+                'sort': 'price_asc',
+                'limit': 30,
+                'offset': 0,
+                'q': 'iphone'
+            })
+    
+            # Assert: статус и структура ответа
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+    
+            self.assertIn('items', data)
+            self.assertIn('total_count', data)
+            self.assertIn('limit', data)
+            self.assertIn('offset', data)
+    
+            self.assertEqual(data['total_count'], 2)
+            self.assertEqual(data['limit'], 5)
+            self.assertEqual(data['offset'], 1)
+            self.assertEqual(len(data['items']), 2)
+    
+            # Assert: трансформация полей B2B → B2C
+            product = data['items'][0]
+            self.assertEqual(product['id'], self.product_id)
+&gt;           self.assertEqual(product['name'], 'iPhone 15 Pro Max')  # B2B: title → B2C: name
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: 'Iphone 15 Black 256GB' != 'iPhone 15 Pro Max'
+E           - Iphone 15 Black 256GB
+E           + iPhone 15 Pro Max
+
+app\tests.py:229: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

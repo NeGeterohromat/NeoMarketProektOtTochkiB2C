@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.540" timestamp="2026-05-29T16:50:51.398176+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_catalog_no_filters_returns_default_sorted_products" file="app\tests.py" line="269" time="0.211"><failure message="TypeError: tuple indices must be integers or slices, not str">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_no_filters_returns_default_sorted_products&gt;
+
+    def test_catalog_no_filters_returns_default_sorted_products(self):
+        """
+        Запрос без фильтров должен вернуть товары с сортировкой по умолчанию (popularity).
+        """
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.side_effect = [self.mock_b2b_products_response,self.mock_b2b_products_data_response]
+    
+            url = reverse('app:products-list')
+            response = self.client.get(url)  # без параметров
+    
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+    
+            # Проверка, что sort передан как 'popularity' (default из b2c.yaml)
+            call_kwargs = mock_b2b.call_args_list[0][0]
+            print(call_kwargs)
+            # в спеке b2b параметр sort ожидает: Available values : price_asc, price_desc, created_desc, popular
+            # хотя в спеке b2c принимаются другие значения этого же параметра Available values : price_asc, price_desc, popularity, new
+            # поэтому запрос к b2b именно с popular
+&gt;           self.assertEqual(call_kwargs['sort'], 'popular')
+                            ^^^^^^^^^^^^^^^^^^^
+E           TypeError: tuple indices must be integers or slices, not str
+
+app\tests.py:288: TypeError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+('http://127.0.0.1:8000/api/v1/public/products', {'limit': 20, 'offset': 0, 'sort': 'popular'})
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

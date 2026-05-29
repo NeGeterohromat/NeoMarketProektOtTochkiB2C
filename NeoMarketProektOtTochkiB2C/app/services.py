@@ -1,4 +1,5 @@
 import requests
+import uuid
 from django.conf import settings
 from django.core.cache import cache
 from .exceptions import B2BUnavailableError
@@ -14,14 +15,24 @@ class B2BClient:
     def _get_headers(self) -> dict:
         return {'X-Service-Key': self.service_key}
 
-    def _call_b2b(self,url,params):
-        response = requests.get(
-            url, 
-            params=params, 
-            headers=self._get_headers(),
-            timeout=self.timeout
-        )
-        return response.json()
+    def _call_b2b_by_func(self,url,params,data,func):
+        return func(
+                    url, 
+                    params=params, 
+                    data=data,
+                    headers=self._get_headers(),
+                    timeout=self.timeout
+                )
+
+    def _call_b2b(self,url,params,data=None,method='GET'):
+        if method=='GET' or method=='POST':
+            if method=='GET':
+                response = self._call_b2b_by_func(url,params,data,requests.get)
+            if method=='POST':
+                response = self._call_b2b_by_func(url,params,data,requests.post)
+            response.raise_for_status()
+            return response.json()
+        raise ValueError(f'There are no urls with method {method}')
     
     def get_public_products(
         self,
@@ -114,29 +125,34 @@ class B2BClient:
     
     def _transform_products_response(self, b2b_data: dict) -> dict:
         """Трансформация ответа B2B в формат b2c.yaml: PaginatedCatalogProducts"""
+        #has_stock
+        data = {'product_ids': [item['id'] for item in b2b_data.get('items', [])]}
+        url = f'{self.base_url}/api/v1/public/products/batch'
+        params = {}
+        if len(data['product_ids'])>0:
+            products_data = self._call_b2b(url=url,params=params,data=data,method='POST')
+            has_stock_dict = dict([[dat['id'],sum([sku['stock_quantity'] for sku in dat['skus']])>0] for dat in products_data])
+        #has_stock
+
         return {
-            'items': [self._transform_product_card(item) for item in b2b_data.get('items', [])],
+            'items': [self._transform_product_card(item,has_stock_dict[item['id']]) for item in b2b_data.get('items', [])],
             'total_count': b2b_data.get('total_count', 0),
             'limit': b2b_data.get('limit', 20),
             'offset': b2b_data.get('offset', 0),
         }
     
-    def _transform_product_card(self, b2b_item: dict) -> dict:
+    def _transform_product_card(self, b2b_item: dict, has_stock) -> dict:
         """Трансформация ProductPublicShortResponse -> CatalogProductCard"""
-        skus = b2b_item.get('skus', [])
-        min_price = min((sku['price'] - sku.get('discount', 0) for sku in skus), default=None)
-        has_stock = any(sku.get('active_quantity', 0) > 0 for sku in skus)
-        
+        cover_image = b2b_item.get('cover_image',None)
+        images = []
+        if not(cover_image is None):
+            images = [{'id': uuid.uuid4(),'url': cover_image, 'ordering': 0}]
+
         return {
             'id': b2b_item['id'],
             'name': b2b_item['title'],
-            'slug': b2b_item.get('slug'),
-            'category': {'id': b2b_item['category_id'], 'name': '', 'level': 0, 'path': []},
-            'min_price': min_price,
-            'old_price': None,
+            'slug': b2b_item['slug'],
+            'min_price': b2b_item['min_price'],
             'has_stock': has_stock,
-            'rating': None,
-            'reviews_count': 0,
-            'images': b2b_item.get('images', []),
-            'seller': {'id': b2b_item['seller_id'], 'display_name': ''},
+            'images': images,
         }
