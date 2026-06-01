@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.396" timestamp="2026-06-01T19:20:43.807863+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.ProductDetailAPITests" name="test_blocked_product_returns_404" file="app\tests.py" line="601" time="0.208"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/catalog/products/{770e8400-e29b-41d4-a716-446655440002}/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

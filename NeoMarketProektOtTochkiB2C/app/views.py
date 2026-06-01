@@ -1,7 +1,7 @@
 """
 Definition of views.
 """
-
+import uuid
 from datetime import datetime
 from django.shortcuts import render
 from django.http import HttpRequest
@@ -49,8 +49,8 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.core.exceptions import ValidationError
 from .services import B2BClient
-from .serializers import CatalogListQuerySerializer, FacetsQuerySerializer
-from .exceptions import B2BUnavailableError, error_response
+from .serializers import CatalogListQuerySerializer, FacetsQuerySerializer, ProductDetailQuerySerializer
+from .exceptions import B2BUnavailableError, error_response, BlockedProductError
 
 ALLOWED_SORT_VALUES = ['price_asc', 'price_desc', 'popularity', 'new']
 
@@ -106,7 +106,6 @@ class CatalogProductsView(APIView):
                 status=status.HTTP_502_BAD_GATEWAY  # или 503
             )
         except Exception as e:
-            # Логирование ошибки
             return error_response(code='INTERNAL_ERROR', message='Internal server error', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
@@ -144,3 +143,39 @@ class CatalogFacetsView(APIView):
         except B2BUnavailableError:
             # Фасеты не критичны — возвращаем пустые, каталог работает
             return Response({'facets': []}, status=status.HTTP_200_OK)
+
+class ProductDetailView(APIView):
+    def get(self,request,id: uuid.UUID):
+        serializer = ProductDetailQuerySerializer(data=request.query_params)
+        if not serializer.is_valid():
+            return error_response(
+                code='INVALID_REQUEST',
+                message=serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        params = serializer.validated_data
+        b2b_client = B2BClient()
+
+        try:
+            result = b2b_client.get_product_detail(id)
+            return Response(result, status=status.HTTP_200_OK)
+
+        except B2BUnavailableError:
+            return error_response(
+                code='B2B_UNAVAILABLE',
+                message='Каталог временно недоступен, попробуйте позже',
+                status=status.HTTP_502_BAD_GATEWAY  # или 503
+            )
+        except BlockedProductError:
+            return error_response(
+                code='PRODUCT_UNAVAILABLE',
+                message='Товар недоступен',
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except ValueError as e:
+            return error_response(code='PRODUCT_UNAVAILABLE', message='Товар недоступен', status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            print(e)
+            return error_response(code='INTERNAL_ERROR', message='Internal server error', status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

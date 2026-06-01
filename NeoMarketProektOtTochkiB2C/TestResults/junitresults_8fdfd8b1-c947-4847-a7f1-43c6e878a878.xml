@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.643" timestamp="2026-06-01T19:23:36.439881+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.ProductDetailAPITests" name="test_cost_price_absent_in_response" file="app\tests.py" line="588" time="0.243"><failure message="AssertionError: 404 != 200">self = &lt;app.tests.ProductDetailAPITests testMethod=test_cost_price_absent_in_response&gt;
+
+    def test_cost_price_absent_in_response(self):
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_product_data_response
+            url = reverse('app:product_detail',kwargs={'id':self.product_id})
+            response = self.client.get(url)
+    
+&gt;           self.assertEqual(response.status_code, status.HTTP_200_OK)
+E           AssertionError: 404 != 200
+
+app\tests.py:595: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/catalog/products/{770e8400-e29b-41d4-a716-446655440002}/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>
