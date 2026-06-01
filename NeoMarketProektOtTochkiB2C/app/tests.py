@@ -60,7 +60,7 @@ class CatalogAPITests(APITestCase):
         "price": 0,
         "discount": 0,
         "stock_quantity": 12,
-        "active_quantity": 0,
+        "active_quantity": 1,
         "article": "string",
         "images": [
           {

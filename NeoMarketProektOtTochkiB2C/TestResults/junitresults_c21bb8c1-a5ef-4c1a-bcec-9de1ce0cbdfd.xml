@@ -1,0 +1,943 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="12" time="8.325" timestamp="2026-06-01T14:40:41.589876+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.CatalogAPITests" name="test_b2b_category_not_found_returns_404" file="app\tests.py" line="365" time="0.768"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_b2b_unavailable_returns_502" file="app\tests.py" line="337" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Bad Gateway: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_empty_category_returns_200_with_empty_items" file="app\tests.py" line="246" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_no_filters_returns_default_sorted_products" file="app\tests.py" line="269" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_catalog_returns_filtered_sorted_products" file="app\tests.py" line="190" time="0.003"><failure message="AssertionError: False is not true">self = &lt;app.tests.CatalogAPITests testMethod=test_catalog_returns_filtered_sorted_products&gt;
+
+    def test_catalog_returns_filtered_sorted_products(self):
+        """
+        Happy path: фильтрация по категории и бренду + сортировка по цене.
+        Проверяет, что B2C корректно проксирует запрос к B2B и трансформирует ответ.
+        """
+        # Подготовка мока для B2BClient._call_b2b
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.side_effect = [self.mock_b2b_products_response,self.mock_b2b_products_data_response]
+    
+            # Запрос с фильтрами и сортировкой
+            url = reverse('app:products-list')  # /api/v1/catalog/products
+            response = self.client.get(url, {
+                'filter[category_id]': self.category_id,
+                'filter[brand]': 'Apple',
+                'filter[price_min]': '10000',
+                'filter[price_max]': '15000000',
+                'sort': 'price_asc',
+                'limit': 30,
+                'offset': 0,
+                'q': 'iphone'
+            })
+    
+            # Assert: статус и структура ответа
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+    
+            self.assertIn('items', data)
+            self.assertIn('total_count', data)
+            self.assertIn('limit', data)
+            self.assertIn('offset', data)
+    
+            self.assertEqual(data['total_count'], 2)
+            self.assertEqual(data['limit'], 30)
+            self.assertEqual(data['offset'], 0)
+            self.assertEqual(len(data['items']), 2)
+    
+            # Assert: трансформация полей B2B → B2C
+            product = data['items'][0]
+            self.assertEqual(product['id'], self.product_id)
+            self.assertEqual(product['name'], 'Iphone 15 Black 256GB')  # B2B: title → B2C: name
+            self.assertEqual(product['min_price'], 65000)  # вычислено из SKU
+&gt;           self.assertTrue(product['has_stock'])  # active_quantity &gt; 0
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AssertionError: False is not true
+
+app\tests.py:232: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_b2b_unavailable_returns_empty_facets" file="app\tests.py" line="443" time="2.164"><failure message="redis.exceptions.ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.">self = &lt;django_redis.cache.RedisCache object at 0x00000253826BA910&gt;
+args = ('facets:123e4567-e89b-12d3-a456-426614174002:133146708735736', None, None, None)
+kwargs = {}
+
+    @functools.wraps(method)
+    def _decorator(self, *args, **kwargs):
+        try:
+&gt;           return method(self, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+env\Lib\site-packages\django_redis\cache.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\django_redis\cache.py:99: in _get
+    return self.client.get(key, default=default, version=version, client=client)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django_redis.client.default.DefaultClient object at 0x0000025382D04910&gt;
+key = 'b2c:1:facets:123e4567-e89b-12d3-a456-426614174002:133146708735736'
+default = None, version = None
+client = &lt;redis.client.Redis(&lt;redis.connection.ConnectionPool(&lt;redis.connection.Connection(parser_class=&lt;class 'redis._parsers.resp2._RESP2Parser'&gt;,host=127.0.0.1,port=6379,db=1,password=&lt;REDACTED&gt;)&gt;)&gt;)&gt;
+
+    def get(
+        self,
+        key: KeyT,
+        default: Optional[Any] = None,
+        version: Optional[int] = None,
+        client: Optional[Redis] = None,
+    ) -&gt; Any:
+        """
+        Retrieve a value from the cache.
+    
+        Returns decoded value if key is found, the default if not.
+        """
+        if client is None:
+            client = self.get_client(write=False)
+    
+        key = self.make_key(key, version=version)
+    
+        try:
+            value = client.get(key)
+        except _main_exceptions as e:
+&gt;           raise ConnectionInterrupted(connection=client) from e
+E           django_redis.exceptions.ConnectionInterrupted: Redis ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+
+env\Lib\site-packages\django_redis\client\default.py:300: ConnectionInterrupted
+
+During handling of the above exception, another exception occurred:
+
+self = &lt;app.tests.CatalogAPITests testMethod=test_facets_b2b_unavailable_returns_empty_facets&gt;
+
+    def test_facets_b2b_unavailable_returns_empty_facets(self):
+        """
+        При недоступности B2B фасеты должны вернуть пустой список (не блокировать каталог).
+        """
+        with patch.object(B2BClient, '_call_b2b') as mock_facets:
+            from app.exceptions import B2BUnavailableError
+            mock_facets.side_effect = B2BUnavailableError('B2B unavailable')
+    
+            url = reverse('app:facets')
+            # неизвестная категория, чтобы с ней не было кеша
+&gt;           response = self.client.get(url, {'category_id': '123e4567-e89b-12d3-a456-426614174002'})
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+app\tests.py:454: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:276: in get
+    response = super().get(path, data=data, **extra)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:193: in get
+    return self.generic('GET', path, **r)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\views.py:139: in get
+    facets = b2b_client.get_facets(
+app\services.py:93: in get_facets
+    if cached := cache.get(cache_key):
+                 ^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django_redis\cache.py:92: in get
+    value = self._get(key, default, version, client)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django_redis\cache.py:36: in _decorator
+    raise e.__cause__  # noqa: B904
+    ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django_redis\client\default.py:298: in get
+    value = client.get(key)
+            ^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\commands\core.py:2073: in get
+    return self.execute_command("GET", name, keys=[name])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\client.py:716: in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\client.py:722: in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\utils.py:236: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\connection.py:3041: in get_connection
+    connection.connect()
+env\Lib\site-packages\redis\connection.py:976: in connect
+    self.retry.call_with_retry(
+env\Lib\site-packages\redis\retry.py:132: in call_with_retry
+    raise error
+env\Lib\site-packages\redis\retry.py:120: in call_with_retry
+    return do()
+           ^^^^
+env\Lib\site-packages\redis\connection.py:977: in &lt;lambda&gt;
+    lambda: self.connect_check_health(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;redis.connection.Connection(host=127.0.0.1,port=6379,db=1)&gt;
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+                sock = self._connect()
+        except socket.timeout:
+            e = TimeoutError("Timeout connecting to server")
+            record_error_count(
+                server_address=self.host,
+                server_port=self.port,
+                network_peer_address=self.host,
+                network_peer_port=self.port,
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+            raise e
+        except OSError as e:
+            e = ConnectionError(self._error_message(e))
+            record_error_count(
+                server_address=getattr(self, "host", None),
+                server_port=getattr(self, "port", None),
+                network_peer_address=getattr(self, "host", None),
+                network_peer_port=getattr(self, "port", None),
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+&gt;           raise e
+E           redis.exceptions.ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+
+env\Lib\site-packages\redis\connection.py:1025: ConnectionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/catalog/facets
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 29, in _decorator
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 99, in _get
+    return self.client.get(key, default=default, version=version, client=client)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\client\default.py", line 300, in get
+    raise ConnectionInterrupted(connection=client) from e
+django_redis.exceptions.ConnectionInterrupted: Redis ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\app\views.py", line 139, in get
+    facets = b2b_client.get_facets(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\app\services.py", line 93, in get_facets
+    if cached := cache.get(cache_key):
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 92, in get
+    value = self._get(key, default, version, client)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 36, in _decorator
+    raise e.__cause__  # noqa: B904
+    ^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\client\default.py", line 298, in get
+    value = client.get(key)
+            ^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\commands\core.py", line 2073, in get
+    return self.execute_command("GET", name, keys=[name])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\client.py", line 716, in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\client.py", line 722, in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\utils.py", line 236, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 3041, in get_connection
+    connection.connect()
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 976, in connect
+    self.retry.call_with_retry(
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\retry.py", line 132, in call_with_retry
+    raise error
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\retry.py", line 120, in call_with_retry
+    return do()
+           ^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 977, in &lt;lambda&gt;
+    lambda: self.connect_check_health(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 1025, in connect_check_health
+    raise e
+redis.exceptions.ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_missing_category_id_returns_400" file="app\tests.py" line="460" time="0.002"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/facets
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_return_counts_per_filter_value" file="app\tests.py" line="389" time="2.038"><failure message="redis.exceptions.ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.">self = &lt;django_redis.cache.RedisCache object at 0x00000253826BA910&gt;
+args = ('facets:123e4567-e89b-12d3-a456-426614174001:-6442871847687906258', None, None, None)
+kwargs = {}
+
+    @functools.wraps(method)
+    def _decorator(self, *args, **kwargs):
+        try:
+&gt;           return method(self, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+env\Lib\site-packages\django_redis\cache.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\django_redis\cache.py:99: in _get
+    return self.client.get(key, default=default, version=version, client=client)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django_redis.client.default.DefaultClient object at 0x0000025382D04910&gt;
+key = 'b2c:1:facets:123e4567-e89b-12d3-a456-426614174001:-6442871847687906258'
+default = None, version = None
+client = &lt;redis.client.Redis(&lt;redis.connection.ConnectionPool(&lt;redis.connection.Connection(parser_class=&lt;class 'redis._parsers.resp2._RESP2Parser'&gt;,host=127.0.0.1,port=6379,db=1,password=&lt;REDACTED&gt;)&gt;)&gt;)&gt;
+
+    def get(
+        self,
+        key: KeyT,
+        default: Optional[Any] = None,
+        version: Optional[int] = None,
+        client: Optional[Redis] = None,
+    ) -&gt; Any:
+        """
+        Retrieve a value from the cache.
+    
+        Returns decoded value if key is found, the default if not.
+        """
+        if client is None:
+            client = self.get_client(write=False)
+    
+        key = self.make_key(key, version=version)
+    
+        try:
+            value = client.get(key)
+        except _main_exceptions as e:
+&gt;           raise ConnectionInterrupted(connection=client) from e
+E           django_redis.exceptions.ConnectionInterrupted: Redis ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+
+env\Lib\site-packages\django_redis\client\default.py:300: ConnectionInterrupted
+
+During handling of the above exception, another exception occurred:
+
+self = &lt;app.tests.CatalogAPITests testMethod=test_facets_return_counts_per_filter_value&gt;
+
+    def test_facets_return_counts_per_filter_value(self):
+        """
+        Фасеты должны возвращать корректные подсчёты для каждого значения фильтра.
+        Соответствует требованию: facets_return_counts_per_filter_value
+        """
+        with patch.object(B2BClient, '_call_b2b') as mock_facets:
+            mock_facets.return_value = self.mock_b2b_facets_response
+    
+            # Предполагаем, что эндпоинт /api/v1/catalog/facets добавлен в urls.py
+            url = reverse('app:facets')  # reverse('app:facets') если добавите name
+&gt;           response = self.client.get(url, {
+                'category_id': self.category_id,
+                'filter[brand]': 'Apple'
+            })
+
+app\tests.py:400: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:276: in get
+    response = super().get(path, data=data, **extra)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:193: in get
+    return self.generic('GET', path, **r)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\views.py:139: in get
+    facets = b2b_client.get_facets(
+app\services.py:93: in get_facets
+    if cached := cache.get(cache_key):
+                 ^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django_redis\cache.py:92: in get
+    value = self._get(key, default, version, client)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django_redis\cache.py:36: in _decorator
+    raise e.__cause__  # noqa: B904
+    ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django_redis\client\default.py:298: in get
+    value = client.get(key)
+            ^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\commands\core.py:2073: in get
+    return self.execute_command("GET", name, keys=[name])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\client.py:716: in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\client.py:722: in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\utils.py:236: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\connection.py:3041: in get_connection
+    connection.connect()
+env\Lib\site-packages\redis\connection.py:976: in connect
+    self.retry.call_with_retry(
+env\Lib\site-packages\redis\retry.py:132: in call_with_retry
+    raise error
+env\Lib\site-packages\redis\retry.py:120: in call_with_retry
+    return do()
+           ^^^^
+env\Lib\site-packages\redis\connection.py:977: in &lt;lambda&gt;
+    lambda: self.connect_check_health(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;redis.connection.Connection(host=127.0.0.1,port=6379,db=1)&gt;
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+                sock = self._connect()
+        except socket.timeout:
+            e = TimeoutError("Timeout connecting to server")
+            record_error_count(
+                server_address=self.host,
+                server_port=self.port,
+                network_peer_address=self.host,
+                network_peer_port=self.port,
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+            raise e
+        except OSError as e:
+            e = ConnectionError(self._error_message(e))
+            record_error_count(
+                server_address=getattr(self, "host", None),
+                server_port=getattr(self, "port", None),
+                network_peer_address=getattr(self, "host", None),
+                network_peer_port=getattr(self, "port", None),
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+&gt;           raise e
+E           redis.exceptions.ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+
+env\Lib\site-packages\redis\connection.py:1025: ConnectionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/catalog/facets
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 29, in _decorator
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 99, in _get
+    return self.client.get(key, default=default, version=version, client=client)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\client\default.py", line 300, in get
+    raise ConnectionInterrupted(connection=client) from e
+django_redis.exceptions.ConnectionInterrupted: Redis ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\app\views.py", line 139, in get
+    facets = b2b_client.get_facets(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\app\services.py", line 93, in get_facets
+    if cached := cache.get(cache_key):
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 92, in get
+    value = self._get(key, default, version, client)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 36, in _decorator
+    raise e.__cause__  # noqa: B904
+    ^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\client\default.py", line 298, in get
+    value = client.get(key)
+            ^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\commands\core.py", line 2073, in get
+    return self.execute_command("GET", name, keys=[name])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\client.py", line 716, in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\client.py", line 722, in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\utils.py", line 236, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 3041, in get_connection
+    connection.connect()
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 976, in connect
+    self.retry.call_with_retry(
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\retry.py", line 132, in call_with_retry
+    raise error
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\retry.py", line 120, in call_with_retry
+    return do()
+           ^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 977, in &lt;lambda&gt;
+    lambda: self.connect_check_health(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 1025, in connect_check_health
+    raise e
+redis.exceptions.ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_facets_without_filters_returns_all_counts" file="app\tests.py" line="426" time="2.035"><failure message="redis.exceptions.ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.">self = &lt;django_redis.cache.RedisCache object at 0x00000253826BA910&gt;
+args = ('facets:123e4567-e89b-12d3-a456-426614174001:133146708735736', None, None, None)
+kwargs = {}
+
+    @functools.wraps(method)
+    def _decorator(self, *args, **kwargs):
+        try:
+&gt;           return method(self, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+env\Lib\site-packages\django_redis\cache.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\django_redis\cache.py:99: in _get
+    return self.client.get(key, default=default, version=version, client=client)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django_redis.client.default.DefaultClient object at 0x0000025382D04910&gt;
+key = 'b2c:1:facets:123e4567-e89b-12d3-a456-426614174001:133146708735736'
+default = None, version = None
+client = &lt;redis.client.Redis(&lt;redis.connection.ConnectionPool(&lt;redis.connection.Connection(parser_class=&lt;class 'redis._parsers.resp2._RESP2Parser'&gt;,host=127.0.0.1,port=6379,db=1,password=&lt;REDACTED&gt;)&gt;)&gt;)&gt;
+
+    def get(
+        self,
+        key: KeyT,
+        default: Optional[Any] = None,
+        version: Optional[int] = None,
+        client: Optional[Redis] = None,
+    ) -&gt; Any:
+        """
+        Retrieve a value from the cache.
+    
+        Returns decoded value if key is found, the default if not.
+        """
+        if client is None:
+            client = self.get_client(write=False)
+    
+        key = self.make_key(key, version=version)
+    
+        try:
+            value = client.get(key)
+        except _main_exceptions as e:
+&gt;           raise ConnectionInterrupted(connection=client) from e
+E           django_redis.exceptions.ConnectionInterrupted: Redis ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+
+env\Lib\site-packages\django_redis\client\default.py:300: ConnectionInterrupted
+
+During handling of the above exception, another exception occurred:
+
+self = &lt;app.tests.CatalogAPITests testMethod=test_facets_without_filters_returns_all_counts&gt;
+
+    def test_facets_without_filters_returns_all_counts(self):
+        """
+        Запрос фасетов без фильтров должен вернуть подсчёты для всех значений.
+        """
+        with patch.object(B2BClient, '_call_b2b') as mock_facets:
+            mock_facets.return_value = self.mock_b2b_facets_response
+    
+            url = reverse('app:facets')
+&gt;           response = self.client.get(url, {'category_id': self.category_id})
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+app\tests.py:435: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:276: in get
+    response = super().get(path, data=data, **extra)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:193: in get
+    return self.generic('GET', path, **r)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app\views.py:139: in get
+    facets = b2b_client.get_facets(
+app\services.py:93: in get_facets
+    if cached := cache.get(cache_key):
+                 ^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django_redis\cache.py:92: in get
+    value = self._get(key, default, version, client)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django_redis\cache.py:36: in _decorator
+    raise e.__cause__  # noqa: B904
+    ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django_redis\client\default.py:298: in get
+    value = client.get(key)
+            ^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\commands\core.py:2073: in get
+    return self.execute_command("GET", name, keys=[name])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\client.py:716: in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\client.py:722: in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\utils.py:236: in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\redis\connection.py:3041: in get_connection
+    connection.connect()
+env\Lib\site-packages\redis\connection.py:976: in connect
+    self.retry.call_with_retry(
+env\Lib\site-packages\redis\retry.py:132: in call_with_retry
+    raise error
+env\Lib\site-packages\redis\retry.py:120: in call_with_retry
+    return do()
+           ^^^^
+env\Lib\site-packages\redis\connection.py:977: in &lt;lambda&gt;
+    lambda: self.connect_check_health(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;redis.connection.Connection(host=127.0.0.1,port=6379,db=1)&gt;
+check_health = True, retry_socket_connect = False
+
+    def connect_check_health(
+        self, check_health: bool = True, retry_socket_connect: bool = True
+    ):
+        if self._sock:
+            return
+        # Track actual retry attempts for error reporting
+        actual_retry_attempts = [0]
+    
+        def failure_callback(error, failure_count):
+            actual_retry_attempts[0] = failure_count
+            self.disconnect(error=error, failure_count=failure_count)
+    
+        try:
+            if retry_socket_connect:
+                sock = self.retry.call_with_retry(
+                    self._connect,
+                    failure_callback,
+                    with_failure_count=True,
+                )
+            else:
+                sock = self._connect()
+        except socket.timeout:
+            e = TimeoutError("Timeout connecting to server")
+            record_error_count(
+                server_address=self.host,
+                server_port=self.port,
+                network_peer_address=self.host,
+                network_peer_port=self.port,
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+            raise e
+        except OSError as e:
+            e = ConnectionError(self._error_message(e))
+            record_error_count(
+                server_address=getattr(self, "host", None),
+                server_port=getattr(self, "port", None),
+                network_peer_address=getattr(self, "host", None),
+                network_peer_port=getattr(self, "port", None),
+                error_type=e,
+                retry_attempts=actual_retry_attempts[0],
+            )
+&gt;           raise e
+E           redis.exceptions.ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+
+env\Lib\site-packages\redis\connection.py:1025: ConnectionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/catalog/facets
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 29, in _decorator
+    return method(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 99, in _get
+    return self.client.get(key, default=default, version=version, client=client)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\client\default.py", line 300, in get
+    raise ConnectionInterrupted(connection=client) from e
+django_redis.exceptions.ConnectionInterrupted: Redis ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\app\views.py", line 139, in get
+    facets = b2b_client.get_facets(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\app\services.py", line 93, in get_facets
+    if cached := cache.get(cache_key):
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 92, in get
+    value = self._get(key, default, version, client)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\cache.py", line 36, in _decorator
+    raise e.__cause__  # noqa: B904
+    ^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django_redis\client\default.py", line 298, in get
+    value = client.get(key)
+            ^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\commands\core.py", line 2073, in get
+    return self.execute_command("GET", name, keys=[name])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\client.py", line 716, in execute_command
+    return self._execute_command(*args, **options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\client.py", line 722, in _execute_command
+    conn = self.connection or pool.get_connection()
+                              ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\utils.py", line 236, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 3041, in get_connection
+    connection.connect()
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 976, in connect
+    self.retry.call_with_retry(
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\retry.py", line 132, in call_with_retry
+    raise error
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\retry.py", line 120, in call_with_retry
+    return do()
+           ^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 977, in &lt;lambda&gt;
+    lambda: self.connect_check_health(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\redis\connection.py", line 1025, in connect_check_health
+    raise e
+redis.exceptions.ConnectionError: Error 10061 connecting to 127.0.0.1:6379. Подключение не установлено, т.к. конечный компьютер отверг запрос на подключение.
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_invalid_limit_returns_400" file="app\tests.py" line="311" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_invalid_offset_returns_400" file="app\tests.py" line="325" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.CatalogAPITests" name="test_invalid_sort_returns_400" file="app\tests.py" line="291" time="0.003"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/catalog/products
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>
