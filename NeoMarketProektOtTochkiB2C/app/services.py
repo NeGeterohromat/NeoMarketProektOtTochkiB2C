@@ -131,7 +131,7 @@ class B2BClient:
         params = {}
         if len(data['product_ids'])>0:
             products_data = self._call_b2b(url=url,params=params,data=data,method='POST')
-            has_stock_dict = dict([[dat['id'],sum([sku['stock_quantity'] for sku in dat['skus']])>0] for dat in products_data])
+            has_stock_dict = dict([[dat['id'],sum([sku['active_quantity'] for sku in dat['skus']])>0] for dat in products_data])
         #has_stock
 
         return {
