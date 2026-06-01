@@ -469,5 +469,221 @@ class CatalogAPITests(APITestCase):
         data = response.json()
         self.assertEqual(data['code'], 'INVALID_REQUEST')
 
+@override_settings(
+    B2B_BASE_URL='http://127.0.0.1:8000',
+    B2B_SERVICE_KEY='test-service-key'
+)
+class ProductDetailAPITests(APITestCase):
+
+    def setUp(self):
+        """Базовая настройка перед каждым тестом"""
+        self.service_key = 'test-service-key'
+        self.client.defaults['HTTP_X_SERVICE_KEY'] = self.service_key
+        self.category_id = '123e4567-e89b-12d3-a456-426614174001'
+        self.product_id = '770e8400-e29b-41d4-a716-446655440002'
+        self.seller_id = '870e8400-e29b-41d4-a716-446655440003'
+
+        # Моковый ответ от B2B для списка данных о товаре
+        self.mock_b2b_product_data_response = {
+  "id": self.product_id,
+  "seller_id": self.seller_id,
+  "category_id": self.category_id,
+  "title": 'Iphone 15 Black',
+  "slug": "IPHONE15BLACK256GB",
+  "description": 'Some cool device',
+  "status": "CREATED",
+  "images": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "url": "string",
+      "ordering": 0
+    }
+  ],
+  "characteristics": [
+    {
+      "name": "Бренд",
+      "value": "Apple",
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    }
+  ],
+  "skus": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa5",
+      "product_id": self.product_id,
+      "name": "Iphone 15 Black 256GB",
+      "price": 6500000,
+      "discount": 0,
+      "stock_quantity": 5,
+      "active_quantity": 1,
+      "article": "string",
+      "images": [
+        {
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "url": "string",
+          "ordering": 0
+        }
+      ],
+      "characteristics": [
+        {
+          "name": "Бренд",
+          "value": "Apple",
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        }
+      ]
+    },
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
+      "product_id": self.product_id,
+      "name": "Iphone 15 Black 512GB",
+      "price": 6600000,
+      "discount": 0,
+      "stock_quantity": 5,
+      "active_quantity": 2,
+      "article": "string",
+      "images": [
+        {
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "url": "string",
+          "ordering": 0
+        }
+      ],
+      "characteristics": [
+        {
+          "name": "Бренд",
+          "value": "Apple",
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        }
+      ]
+    }
+  ],
+  "created_at": "2026-06-01T12:49:58.605Z",
+  "updated_at": "2026-06-01T12:49:58.605Z"
+}
+
+    def test_product_card_returns_full_data_with_skus(self):
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_product_data_response
+            url = reverse('app:product_detail',kwargs={'id':self.product_id})
+            response = self.client.get(url)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()           
+            
+            self.assertEqual(data['id'], self.product_id)
+            self.assertEqual(data['name'], 'Iphone 15 Black')  # B2B: title → B2C: name
+            self.assertEqual(data['slug'], "IPHONE15BLACK256GB")
+            self.assertEqual(data['min_price'], 6500000)  # вычислено из SKU
+            self.assertTrue(data['has_stock'])  # active_quantity > 0
+            self.assertIn('images', data)
+            self.assertEqual(data['description'], 'Some cool device')
+            self.assertIn('skus', data)
+
+            skus = data['skus']
+            for sku in skus:
+                self.assertIn('id', sku)
+                self.assertIn('name', sku)
+                self.assertIn('price', sku)
+                self.assertIn('available_quantity', sku)
+                self.assertIn('images', sku)
+
+    def test_cost_price_absent_in_response(self):
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_product_data_response
+            url = reverse('app:product_detail',kwargs={'id':self.product_id})
+            response = self.client.get(url)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+            self.assertIn('skus', data)
+
+            self.assertTrue(all('cost_price' not in sku for sku in data['skus']))
+            self.assertTrue(all('reserved_quantity' not in sku for sku in data['skus']))
+
+    def test_blocked_product_returns_404(self):
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value =  {
+  "id": self.product_id,
+  "seller_id": self.seller_id,
+  "category_id": self.category_id,
+  "title": 'Iphone 15 Black',
+  "slug": "IPHONE15BLACK256GB",
+  "description": 'Some cool device',
+  "status": "BLOCKED",
+  "images": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "url": "string",
+      "ordering": 0
+    }
+  ],
+  "characteristics": [
+    {
+      "name": "Бренд",
+      "value": "Apple",
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    }
+  ],
+  "skus": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa5",
+      "product_id": self.product_id,
+      "name": "Iphone 15 Black 256GB",
+      "price": 6500000,
+      "discount": 0,
+      "stock_quantity": 5,
+      "active_quantity": 1,
+      "article": "string",
+      "images": [
+        {
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "url": "string",
+          "ordering": 0
+        }
+      ],
+      "characteristics": [
+        {
+          "name": "Бренд",
+          "value": "Apple",
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        }
+      ]
+    },
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
+      "product_id": self.product_id,
+      "name": "Iphone 15 Black 512GB",
+      "price": 6600000,
+      "discount": 0,
+      "stock_quantity": 5,
+      "active_quantity": 2,
+      "article": "string",
+      "images": [
+        {
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "url": "string",
+          "ordering": 0
+        }
+      ],
+      "characteristics": [
+        {
+          "name": "Бренд",
+          "value": "Apple",
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        }
+      ]
+    }
+  ],
+  "created_at": "2026-06-01T12:49:58.605Z",
+  "updated_at": "2026-06-01T12:49:58.605Z"
+}
+            url = reverse('app:product_detail',kwargs={'id':self.product_id})
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+            data = response.json()
+            self.assertEqual(data['code'], 'PRODUCT_UNAVAILABLE')
+            self.assertEqual(data['message'], 'Товар недоступен')
+
+
+
 
 

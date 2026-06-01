@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.546" timestamp="2026-06-01T19:31:47.333580+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.ProductDetailAPITests" name="test_cost_price_absent_in_response" file="app\tests.py" line="588" time="0.214"><failure message="TypeError: argument of type 'NoneType' is not iterable">self = &lt;app.tests.ProductDetailAPITests testMethod=test_cost_price_absent_in_response&gt;
+
+    def test_cost_price_absent_in_response(self):
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_product_data_response
+            url = reverse('app:product_detail',kwargs={'id':self.product_id})
+            response = self.client.get(url)
+    
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            data = response.json()
+            self.assertIn('skus', data)
+    
+&gt;           self.assertTrue(all('cost_price' not in sku for sku in data['skus']))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+app\tests.py:599: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;list_iterator object at 0x000001DA99958730&gt;
+
+&gt;   self.assertTrue(all('cost_price' not in sku for sku in data['skus']))
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: argument of type 'NoneType' is not iterable
+
+app\tests.py:599: TypeError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+222
+{'id': '3fa85f64-5717-4562-b3fc-2c963f66afa5', 'product_id': '770e8400-e29b-41d4-a716-446655440002', 'name': 'Iphone 15 Black 256GB', 'price': 6500000, 'discount': 0, 'stock_quantity': 5, 'active_quantity': 1, 'article': 'string', 'images': [{'id': '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'url': 'string', 'ordering': 0}], 'characteristics': [{'name': 'Бренд', 'value': 'Apple', 'id': '3fa85f64-5717-4562-b3fc-2c963f66afa6'}]}
+{'id': '3fa85f64-5717-4562-b3fc-2c963f66afa7', 'product_id': '770e8400-e29b-41d4-a716-446655440002', 'name': 'Iphone 15 Black 512GB', 'price': 6600000, 'discount': 0, 'stock_quantity': 5, 'active_quantity': 2, 'article': 'string', 'images': [{'id': '3fa85f64-5717-4562-b3fc-2c963f66afa6', 'url': 'string', 'ordering': 0}], 'characteristics': [{'name': 'Бренд', 'value': 'Apple', 'id': '3fa85f64-5717-4562-b3fc-2c963f66afa6'}]}
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

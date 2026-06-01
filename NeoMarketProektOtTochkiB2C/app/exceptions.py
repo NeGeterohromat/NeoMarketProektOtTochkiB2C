@@ -18,3 +18,6 @@ def error_response(
 
 class B2BUnavailableError(Exception):
     pass
+
+class BlockedProductError(Exception):
+    pass

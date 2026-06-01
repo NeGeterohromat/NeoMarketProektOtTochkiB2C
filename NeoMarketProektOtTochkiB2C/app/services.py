@@ -2,7 +2,7 @@ import requests
 import uuid
 from django.conf import settings
 from django.core.cache import cache
-from .exceptions import B2BUnavailableError
+from .exceptions import B2BUnavailableError, BlockedProductError
 
 class B2BClient:
     """Прокси-клиент для вызовов B2B-сервиса (синхронная версия)"""
@@ -155,4 +155,47 @@ class B2BClient:
             'min_price': b2b_item['min_price'],
             'has_stock': has_stock,
             'images': images,
+        }
+
+    def get_product_detail(self, id: uuid.UUID):
+        data = {'product_ids': [id]}
+        url = f'{self.base_url}/api/v1/public/products/{id}'
+        params = {}
+
+        try:
+            b2b_answer = self._call_b2b(url=url,params=params,data=data,method='POST')
+            if b2b_answer['status']=='BLOCKED' or b2b_answer['status']=='HARD_BLOCKED':
+                raise BlockedProductError('Товар недоступен')
+            return self._transform_product_from_uuid_get(b2b_answer)
+
+        except requests.exceptions.ConnectionError:
+            raise B2BUnavailableError('B2B service unavailable - connection error')
+        except requests.exceptions.Timeout:
+            raise B2BUnavailableError('B2B service timeout')
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                raise ValueError('Product not found')
+            raise B2BUnavailableError(f'B2B HTTP error: {e.response.status_code}')
+        except requests.exceptions.RequestException as e:
+            raise B2BUnavailableError(f'B2B service error: {e}')
+
+    def _transform_product_from_uuid_get(self,b2b_item):
+        return {
+            'id': b2b_item['id'],
+            'name': b2b_item['title'],
+            'slug': b2b_item['slug'],
+            'min_price': min(sku['price'] for sku in b2b_item['skus']),
+            'has_stock': sum(sku['active_quantity'] for sku in b2b_item['skus'])>0,
+            'images': b2b_item['images'],
+            'description': b2b_item['description'],
+            'skus':[self._transform_sku(sku) for sku in b2b_item['skus']]
+        }
+
+    def _transform_sku(self,b2b_sku):
+        return {
+          "id": b2b_sku['id'],
+          "name": b2b_sku['name'],
+          "price": b2b_sku['price'],
+          "available_quantity": b2b_sku['active_quantity'],
+          "images": b2b_sku['images']
         }

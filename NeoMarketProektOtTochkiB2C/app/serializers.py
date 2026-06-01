@@ -42,3 +42,7 @@ class FacetsQuerySerializer(serializers.Serializer):
     """Параметры для /api/v1/catalog/facets"""
     category_id = serializers.UUIDField(required=True)
     filter = CatalogFilterSerializer(required=False, source='*')
+
+class ProductDetailQuerySerializer(serializers.Serializer):
+    """Параметры для /api/v1/catalog/products{id}"""
+    sku = serializers.UUIDField(required=False)

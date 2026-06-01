@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.396" timestamp="2026-06-01T19:34:48.314801+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.ProductDetailAPITests" name="test_cost_price_absent_in_response" file="app\tests.py" line="588" time="0.211"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

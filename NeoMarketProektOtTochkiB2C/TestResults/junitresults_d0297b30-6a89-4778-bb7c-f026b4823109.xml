@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="0.590" timestamp="2026-06-01T19:18:10.592035+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.ProductDetailAPITests" name="test_blocked_product_returns_404" file="app\tests.py" line="601" time="0.206"><failure message="django.urls.exceptions.NoReverseMatch: Reverse for 'product_detail' with no arguments not found. 1 pattern(s) tried: ['api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z']">self = &lt;app.tests.ProductDetailAPITests testMethod=test_blocked_product_returns_404&gt;
+
+        def test_blocked_product_returns_404(self):
+            with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+                mock_b2b.return_value =  {
+      "id": self.product_id,
+      "seller_id": self.seller_id,
+      "category_id": self.category_id,
+      "title": 'Iphone 15 Black',
+      "slug": "IPHONE15BLACK256GB",
+      "description": 'Some cool device',
+      "status": "BLOCKED",
+      "images": [
+        {
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          "url": "string",
+          "ordering": 0
+        }
+      ],
+      "characteristics": [
+        {
+          "name": "Бренд",
+          "value": "Apple",
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        }
+      ],
+      "skus": [
+        {
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa5",
+          "product_id": self.product_id,
+          "name": "Iphone 15 Black 256GB",
+          "price": 6500000,
+          "discount": 0,
+          "stock_quantity": 5,
+          "active_quantity": 1,
+          "article": "string",
+          "images": [
+            {
+              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+              "url": "string",
+              "ordering": 0
+            }
+          ],
+          "characteristics": [
+            {
+              "name": "Бренд",
+              "value": "Apple",
+              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            }
+          ]
+        },
+        {
+          "id": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
+          "product_id": self.product_id,
+          "name": "Iphone 15 Black 512GB",
+          "price": 6600000,
+          "discount": 0,
+          "stock_quantity": 5,
+          "active_quantity": 2,
+          "article": "string",
+          "images": [
+            {
+              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+              "url": "string",
+              "ordering": 0
+            }
+          ],
+          "characteristics": [
+            {
+              "name": "Бренд",
+              "value": "Apple",
+              "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            }
+          ]
+        }
+      ],
+      "created_at": "2026-06-01T12:49:58.605Z",
+      "updated_at": "2026-06-01T12:49:58.605Z"
+    }
+&gt;               url = reverse('app:product_detail')
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+app\tests.py:679: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\django\urls\base.py:98: in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;URLResolver &lt;URLResolver list&gt; (None:None) '^/'&gt;
+lookup_view = 'product_detail', _prefix = '/', args = (), kwargs = {}
+possibilities = [([('api/v1/catalog/products/{%(id)s}/', ['id'])], 'api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z', {}, {'id': &lt;django.urls.converters.UUIDConverter object at 0x0000023D88AA5A10&gt;})]
+possibility = [('api/v1/catalog/products/{%(id)s}/', ['id'])]
+pattern = 'api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z'
+defaults = {}
+converters = {'id': &lt;django.urls.converters.UUIDConverter object at 0x0000023D88AA5A10&gt;}
+result = 'api/v1/catalog/products/{%(id)s}/', params = ['id']
+
+    def _reverse_with_prefix(self, lookup_view, _prefix, *args, **kwargs):
+        if args and kwargs:
+            raise ValueError("Don't mix *args and **kwargs in call to reverse()!")
+    
+        if not self._populated:
+            self._populate()
+    
+        possibilities = self.reverse_dict.getlist(lookup_view)
+    
+        for possibility, pattern, defaults, converters in possibilities:
+            for result, params in possibility:
+                if args:
+                    if len(args) != len(params):
+                        continue
+                    candidate_subs = dict(zip(params, args))
+                else:
+                    if set(kwargs).symmetric_difference(params).difference(defaults):
+                        continue
+                    matches = True
+                    for k, v in defaults.items():
+                        if k in params:
+                            continue
+                        if kwargs.get(k, v) != v:
+                            matches = False
+                            break
+                    if not matches:
+                        continue
+                    candidate_subs = kwargs
+                # Convert the candidate subs to text using Converter.to_url().
+                text_candidate_subs = {}
+                match = True
+                for k, v in candidate_subs.items():
+                    if k in converters:
+                        try:
+                            text_candidate_subs[k] = converters[k].to_url(v)
+                        except ValueError:
+                            match = False
+                            break
+                    else:
+                        text_candidate_subs[k] = str(v)
+                if not match:
+                    continue
+                # WSGI provides decoded URLs, without %xx escapes, and the URL
+                # resolver operates on such URLs. First substitute arguments
+                # without quoting to build a decoded URL and look for a match.
+                # Then, if we have a match, redo the substitution with quoted
+                # arguments in order to return a properly encoded URL.
+                candidate_pat = _prefix.replace("%", "%%") + result
+                if re.search(
+                    "^%s%s" % (re.escape(_prefix), pattern),
+                    candidate_pat % text_candidate_subs,
+                ):
+                    # safe characters from `pchar` definition of RFC 3986
+                    url = quote(
+                        candidate_pat % text_candidate_subs,
+                        safe=RFC3986_SUBDELIMS + "/~:@",
+                    )
+                    # Don't allow construction of scheme relative urls.
+                    return escape_leading_slashes(url)
+        # lookup_view can be URL name or callable, but callables are not
+        # friendly in error messages.
+        m = getattr(lookup_view, "__module__", None)
+        n = getattr(lookup_view, "__name__", None)
+        if m is not None and n is not None:
+            lookup_view_s = "%s.%s" % (m, n)
+        else:
+            lookup_view_s = lookup_view
+    
+        patterns = [pattern for (_, pattern, _, _) in possibilities]
+        if patterns:
+            if args:
+                arg_msg = "arguments '%s'" % (args,)
+            elif kwargs:
+                arg_msg = "keyword arguments '%s'" % kwargs
+            else:
+                arg_msg = "no arguments"
+            msg = "Reverse for '%s' with %s not found. %d pattern(s) tried: %s" % (
+                lookup_view_s,
+                arg_msg,
+                len(patterns),
+                patterns,
+            )
+        else:
+            msg = (
+                "Reverse for '%(view)s' not found. '%(view)s' is not "
+                "a valid view function or pattern name." % {"view": lookup_view_s}
+            )
+&gt;       raise NoReverseMatch(msg)
+E       django.urls.exceptions.NoReverseMatch: Reverse for 'product_detail' with no arguments not found. 1 pattern(s) tried: ['api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z']
+
+env\Lib\site-packages\django\urls\resolvers.py:831: NoReverseMatch</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.ProductDetailAPITests" name="test_cost_price_absent_in_response" file="app\tests.py" line="588" time="0.002"><failure message="django.urls.exceptions.NoReverseMatch: Reverse for 'product_detail' with no arguments not found. 1 pattern(s) tried: ['api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z']">self = &lt;app.tests.ProductDetailAPITests testMethod=test_cost_price_absent_in_response&gt;
+
+    def test_cost_price_absent_in_response(self):
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_product_data_response
+&gt;           url = reverse('app:product_detail')
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+app\tests.py:592: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\django\urls\base.py:98: in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;URLResolver &lt;URLResolver list&gt; (None:None) '^/'&gt;
+lookup_view = 'product_detail', _prefix = '/', args = (), kwargs = {}
+possibilities = [([('api/v1/catalog/products/{%(id)s}/', ['id'])], 'api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z', {}, {'id': &lt;django.urls.converters.UUIDConverter object at 0x0000023D88AA5A10&gt;})]
+possibility = [('api/v1/catalog/products/{%(id)s}/', ['id'])]
+pattern = 'api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z'
+defaults = {}
+converters = {'id': &lt;django.urls.converters.UUIDConverter object at 0x0000023D88AA5A10&gt;}
+result = 'api/v1/catalog/products/{%(id)s}/', params = ['id']
+
+    def _reverse_with_prefix(self, lookup_view, _prefix, *args, **kwargs):
+        if args and kwargs:
+            raise ValueError("Don't mix *args and **kwargs in call to reverse()!")
+    
+        if not self._populated:
+            self._populate()
+    
+        possibilities = self.reverse_dict.getlist(lookup_view)
+    
+        for possibility, pattern, defaults, converters in possibilities:
+            for result, params in possibility:
+                if args:
+                    if len(args) != len(params):
+                        continue
+                    candidate_subs = dict(zip(params, args))
+                else:
+                    if set(kwargs).symmetric_difference(params).difference(defaults):
+                        continue
+                    matches = True
+                    for k, v in defaults.items():
+                        if k in params:
+                            continue
+                        if kwargs.get(k, v) != v:
+                            matches = False
+                            break
+                    if not matches:
+                        continue
+                    candidate_subs = kwargs
+                # Convert the candidate subs to text using Converter.to_url().
+                text_candidate_subs = {}
+                match = True
+                for k, v in candidate_subs.items():
+                    if k in converters:
+                        try:
+                            text_candidate_subs[k] = converters[k].to_url(v)
+                        except ValueError:
+                            match = False
+                            break
+                    else:
+                        text_candidate_subs[k] = str(v)
+                if not match:
+                    continue
+                # WSGI provides decoded URLs, without %xx escapes, and the URL
+                # resolver operates on such URLs. First substitute arguments
+                # without quoting to build a decoded URL and look for a match.
+                # Then, if we have a match, redo the substitution with quoted
+                # arguments in order to return a properly encoded URL.
+                candidate_pat = _prefix.replace("%", "%%") + result
+                if re.search(
+                    "^%s%s" % (re.escape(_prefix), pattern),
+                    candidate_pat % text_candidate_subs,
+                ):
+                    # safe characters from `pchar` definition of RFC 3986
+                    url = quote(
+                        candidate_pat % text_candidate_subs,
+                        safe=RFC3986_SUBDELIMS + "/~:@",
+                    )
+                    # Don't allow construction of scheme relative urls.
+                    return escape_leading_slashes(url)
+        # lookup_view can be URL name or callable, but callables are not
+        # friendly in error messages.
+        m = getattr(lookup_view, "__module__", None)
+        n = getattr(lookup_view, "__name__", None)
+        if m is not None and n is not None:
+            lookup_view_s = "%s.%s" % (m, n)
+        else:
+            lookup_view_s = lookup_view
+    
+        patterns = [pattern for (_, pattern, _, _) in possibilities]
+        if patterns:
+            if args:
+                arg_msg = "arguments '%s'" % (args,)
+            elif kwargs:
+                arg_msg = "keyword arguments '%s'" % kwargs
+            else:
+                arg_msg = "no arguments"
+            msg = "Reverse for '%s' with %s not found. %d pattern(s) tried: %s" % (
+                lookup_view_s,
+                arg_msg,
+                len(patterns),
+                patterns,
+            )
+        else:
+            msg = (
+                "Reverse for '%(view)s' not found. '%(view)s' is not "
+                "a valid view function or pattern name." % {"view": lookup_view_s}
+            )
+&gt;       raise NoReverseMatch(msg)
+E       django.urls.exceptions.NoReverseMatch: Reverse for 'product_detail' with no arguments not found. 1 pattern(s) tried: ['api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z']
+
+env\Lib\site-packages\django\urls\resolvers.py:831: NoReverseMatch</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="app.tests.ProductDetailAPITests" name="test_product_card_returns_full_data_with_skus" file="app\tests.py" line="562" time="0.003"><failure message="django.urls.exceptions.NoReverseMatch: Reverse for 'product_detail' with no arguments not found. 1 pattern(s) tried: ['api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z']">self = &lt;app.tests.ProductDetailAPITests testMethod=test_product_card_returns_full_data_with_skus&gt;
+
+    def test_product_card_returns_full_data_with_skus(self):
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_product_data_response
+&gt;           url = reverse('app:product_detail')
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+app\tests.py:566: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\django\urls\base.py:98: in reverse
+    resolved_url = resolver._reverse_with_prefix(view, prefix, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;URLResolver &lt;URLResolver list&gt; (None:None) '^/'&gt;
+lookup_view = 'product_detail', _prefix = '/', args = (), kwargs = {}
+possibilities = [([('api/v1/catalog/products/{%(id)s}/', ['id'])], 'api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z', {}, {'id': &lt;django.urls.converters.UUIDConverter object at 0x0000023D88AA5A10&gt;})]
+possibility = [('api/v1/catalog/products/{%(id)s}/', ['id'])]
+pattern = 'api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z'
+defaults = {}
+converters = {'id': &lt;django.urls.converters.UUIDConverter object at 0x0000023D88AA5A10&gt;}
+result = 'api/v1/catalog/products/{%(id)s}/', params = ['id']
+
+    def _reverse_with_prefix(self, lookup_view, _prefix, *args, **kwargs):
+        if args and kwargs:
+            raise ValueError("Don't mix *args and **kwargs in call to reverse()!")
+    
+        if not self._populated:
+            self._populate()
+    
+        possibilities = self.reverse_dict.getlist(lookup_view)
+    
+        for possibility, pattern, defaults, converters in possibilities:
+            for result, params in possibility:
+                if args:
+                    if len(args) != len(params):
+                        continue
+                    candidate_subs = dict(zip(params, args))
+                else:
+                    if set(kwargs).symmetric_difference(params).difference(defaults):
+                        continue
+                    matches = True
+                    for k, v in defaults.items():
+                        if k in params:
+                            continue
+                        if kwargs.get(k, v) != v:
+                            matches = False
+                            break
+                    if not matches:
+                        continue
+                    candidate_subs = kwargs
+                # Convert the candidate subs to text using Converter.to_url().
+                text_candidate_subs = {}
+                match = True
+                for k, v in candidate_subs.items():
+                    if k in converters:
+                        try:
+                            text_candidate_subs[k] = converters[k].to_url(v)
+                        except ValueError:
+                            match = False
+                            break
+                    else:
+                        text_candidate_subs[k] = str(v)
+                if not match:
+                    continue
+                # WSGI provides decoded URLs, without %xx escapes, and the URL
+                # resolver operates on such URLs. First substitute arguments
+                # without quoting to build a decoded URL and look for a match.
+                # Then, if we have a match, redo the substitution with quoted
+                # arguments in order to return a properly encoded URL.
+                candidate_pat = _prefix.replace("%", "%%") + result
+                if re.search(
+                    "^%s%s" % (re.escape(_prefix), pattern),
+                    candidate_pat % text_candidate_subs,
+                ):
+                    # safe characters from `pchar` definition of RFC 3986
+                    url = quote(
+                        candidate_pat % text_candidate_subs,
+                        safe=RFC3986_SUBDELIMS + "/~:@",
+                    )
+                    # Don't allow construction of scheme relative urls.
+                    return escape_leading_slashes(url)
+        # lookup_view can be URL name or callable, but callables are not
+        # friendly in error messages.
+        m = getattr(lookup_view, "__module__", None)
+        n = getattr(lookup_view, "__name__", None)
+        if m is not None and n is not None:
+            lookup_view_s = "%s.%s" % (m, n)
+        else:
+            lookup_view_s = lookup_view
+    
+        patterns = [pattern for (_, pattern, _, _) in possibilities]
+        if patterns:
+            if args:
+                arg_msg = "arguments '%s'" % (args,)
+            elif kwargs:
+                arg_msg = "keyword arguments '%s'" % kwargs
+            else:
+                arg_msg = "no arguments"
+            msg = "Reverse for '%s' with %s not found. %d pattern(s) tried: %s" % (
+                lookup_view_s,
+                arg_msg,
+                len(patterns),
+                patterns,
+            )
+        else:
+            msg = (
+                "Reverse for '%(view)s' not found. '%(view)s' is not "
+                "a valid view function or pattern name." % {"view": lookup_view_s}
+            )
+&gt;       raise NoReverseMatch(msg)
+E       django.urls.exceptions.NoReverseMatch: Reverse for 'product_detail' with no arguments not found. 1 pattern(s) tried: ['api/v1/catalog/products/\\{(?P&lt;id&gt;[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\\}/\\Z']
+
+env\Lib\site-packages\django\urls\resolvers.py:831: NoReverseMatch</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>
