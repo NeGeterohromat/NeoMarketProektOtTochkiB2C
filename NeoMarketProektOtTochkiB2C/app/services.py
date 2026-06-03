@@ -199,3 +199,42 @@ class B2BClient:
           "available_quantity": b2b_sku['active_quantity'],
           "images": b2b_sku['images']
         }
+
+    def get_skus_info(self, sku_ids: list) -> dict:
+        """Получает информацию о конкретных SKU для обогащения корзины"""
+        if not sku_ids:
+            return {}
+        
+        # Предполагаем, что B2B имеет эндпоинт для батч-запроса SKU
+        url = f'{self.base_url}/api/v1/public/skus/batch'
+        try:
+            response_data = self._call_b2b(url,params={}, data={'sku_ids': [str(sid) for sid in sku_ids]}, method='POST')
+            # Ожидаем формат: {'items': [{'id': '...', 'product_id': '...', 'price': 100, 'active_quantity': 5, 'status': 'MODERATED'}]}
+            result = {}
+            for item in response_data.get('items', []):
+                sku_id = str(item['id'])
+                is_available = item.get('active_quantity', 0) > 0 and item.get('status') == 'MODERATED'
+                reason = None
+                if not is_available:
+                    if item.get('active_quantity', 0) == 0:
+                        reason = 'OUT_OF_STOCK'
+                    elif item.get('status') in ['BLOCKED', 'HARD_BLOCKED']:
+                        reason = 'PRODUCT_BLOCKED'
+                    elif item.get('status') == 'DELETED':
+                        reason = 'PRODUCT_DELETED'
+                    elif item.get('status') == 'EDITED':
+                        reason = 'ON_MODERATION'
+                
+                result[sku_id] = {
+                    'product_id': item.get('product_id'),
+                    'name': item.get('name', 'Unknown'),
+                    'price': item.get('price', 0),
+                    'available_quantity': item.get('active_quantity', 0),
+                    'is_available': is_available,
+                    'unavailable_reason': reason
+                }
+            return result
+        except B2BUnavailableError:
+            raise
+        except Exception:
+            return {} # Fallback для тестов или частичной недоступности

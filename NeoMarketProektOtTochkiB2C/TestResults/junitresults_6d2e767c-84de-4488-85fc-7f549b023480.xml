@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.969" timestamp="2026-06-03T21:28:07.118762+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="cart.tests.CartAPITests" name="test_add_sku_increments_quantity_if_already_in_cart" file="cart\tests.py" line="50" time="0.644"><failure message="django.urls.exceptions.NoReverseMatch: 'cart' is not a registered namespace">viewname = 'cart:cart-items', urlconf = None, args = [], kwargs = {}
+current_app = None
+
+    def reverse(
+        viewname,
+        urlconf=None,
+        args=None,
+        kwargs=None,
+        current_app=None,
+        *,
+        query=None,
+        fragment=None,
+    ):
+        if urlconf is None:
+            urlconf = get_urlconf()
+        resolver = get_resolver(urlconf)
+        args = args or []
+        kwargs = kwargs or {}
+    
+        prefix = get_script_prefix()
+    
+        if not isinstance(viewname, str):
+            view = viewname
+        else:
+            *path, view = viewname.split(":")
+    
+            if current_app:
+                current_path = current_app.split(":")
+                current_path.reverse()
+            else:
+                current_path = None
+    
+            resolved_path = []
+            ns_pattern = ""
+            ns_converters = {}
+            for ns in path:
+                current_ns = current_path.pop() if current_path else None
+                # Lookup the name to see if it could be an app identifier.
+                try:
+                    app_list = resolver.app_dict[ns]
+                    # Yes! Path part matches an app in the current Resolver.
+                    if current_ns and current_ns in app_list:
+                        # If we are reversing for a particular app, use that
+                        # namespace.
+                        ns = current_ns
+                    elif ns not in app_list:
+                        # The name isn't shared by one of the instances (i.e.,
+                        # the default) so pick the first instance as the default.
+                        ns = app_list[0]
+                except KeyError:
+                    pass
+    
+                if ns != current_ns:
+                    current_path = None
+    
+                try:
+&gt;                   extra, resolver = resolver.namespace_dict[ns]
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E                   KeyError: 'cart'
+
+env\Lib\site-packages\django\urls\base.py:81: KeyError
+
+During handling of the above exception, another exception occurred:
+
+self = &lt;cart.tests.CartAPITests testMethod=test_add_sku_increments_quantity_if_already_in_cart&gt;
+mock_post = &lt;MagicMock name='post' id='2427893424912'&gt;
+
+    @patch('cart.services.requests.post')
+    def test_add_sku_increments_quantity_if_already_in_cart(self, mock_post):
+        mock_post.side_effect = self._mock_b2b_skus()
+        self.client.credentials(HTTP_X_SESSION_ID=self.session_id)
+&gt;       url = reverse('cart:cart-items')
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+cart\tests.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+viewname = 'cart:cart-items', urlconf = None, args = [], kwargs = {}
+current_app = None
+
+    def reverse(
+        viewname,
+        urlconf=None,
+        args=None,
+        kwargs=None,
+        current_app=None,
+        *,
+        query=None,
+        fragment=None,
+    ):
+        if urlconf is None:
+            urlconf = get_urlconf()
+        resolver = get_resolver(urlconf)
+        args = args or []
+        kwargs = kwargs or {}
+    
+        prefix = get_script_prefix()
+    
+        if not isinstance(viewname, str):
+            view = viewname
+        else:
+            *path, view = viewname.split(":")
+    
+            if current_app:
+                current_path = current_app.split(":")
+                current_path.reverse()
+            else:
+                current_path = None
+    
+            resolved_path = []
+            ns_pattern = ""
+            ns_converters = {}
+            for ns in path:
+                current_ns = current_path.pop() if current_path else None
+                # Lookup the name to see if it could be an app identifier.
+                try:
+                    app_list = resolver.app_dict[ns]
+                    # Yes! Path part matches an app in the current Resolver.
+                    if current_ns and current_ns in app_list:
+                        # If we are reversing for a particular app, use that
+                        # namespace.
+                        ns = current_ns
+                    elif ns not in app_list:
+                        # The name isn't shared by one of the instances (i.e.,
+                        # the default) so pick the first instance as the default.
+                        ns = app_list[0]
+                except KeyError:
+                    pass
+    
+                if ns != current_ns:
+                    current_path = None
+    
+                try:
+                    extra, resolver = resolver.namespace_dict[ns]
+                    resolved_path.append(ns)
+                    ns_pattern += extra
+                    ns_converters.update(resolver.pattern.converters)
+                except KeyError as key:
+                    if resolved_path:
+                        raise NoReverseMatch(
+                            "%s is not a registered namespace inside '%s'"
+                            % (key, ":".join(resolved_path))
+                        )
+                    else:
+&gt;                       raise NoReverseMatch("%s is not a registered namespace" % key)
+E                       django.urls.exceptions.NoReverseMatch: 'cart' is not a registered namespace
+
+env\Lib\site-packages\django\urls\base.py:92: NoReverseMatch</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

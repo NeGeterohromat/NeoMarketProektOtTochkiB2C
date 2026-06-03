@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="4" time="2.219" timestamp="2026-06-03T22:01:29.307851+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="cart.tests.CartAPITests" name="test_add_sku_increments_quantity_if_already_in_cart" file="cart\tests.py" line="52" time="0.634"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_get_cart_enriched_with_b2b_data" file="cart\tests.py" line="69" time="0.415"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_guest_cart_merged_on_login" file="cart\tests.py" line="108" time="0.418"><failure message="TypeError: CartAPITests.test_guest_cart_merged_on_login() missing 1 required positional argument: 'mock_post'">self = &lt;unittest.case._Outcome object at 0x000001052F116750&gt;
+test_case = &lt;cart.tests.CartAPITests testMethod=test_guest_cart_merged_on_login&gt;
+subTest = False
+
+    @contextlib.contextmanager
+    def testPartExecutor(self, test_case, subTest=False):
+        old_success = self.success
+        self.success = True
+        try:
+&gt;           yield
+
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\case.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\case.py:623: in run
+    self._callTestMethod(testMethod)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;cart.tests.CartAPITests testMethod=test_guest_cart_merged_on_login&gt;
+method = &lt;bound method CartAPITests.test_guest_cart_merged_on_login of &lt;cart.tests.CartAPITests testMethod=test_guest_cart_merged_on_login&gt;&gt;
+
+    def _callTestMethod(self, method):
+&gt;       if method() is not None:
+           ^^^^^^^^
+E       TypeError: CartAPITests.test_guest_cart_merged_on_login() missing 1 required positional argument: 'mock_post'
+
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\case.py:579: TypeError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_unavailable_sku_shown_with_reason" file="cart\tests.py" line="89" time="0.421"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

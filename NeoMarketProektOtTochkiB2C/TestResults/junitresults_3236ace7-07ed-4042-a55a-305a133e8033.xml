@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.796" timestamp="2026-06-03T22:00:33.569602+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="cart.tests.CartAPITests" name="test_get_cart_enriched_with_b2b_data" file="cart\tests.py" line="69" time="0.624"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

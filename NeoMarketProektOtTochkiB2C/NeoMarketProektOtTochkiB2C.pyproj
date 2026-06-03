@@ -55,6 +55,18 @@
     <Compile Include="app\views.py" />
     <Compile Include="app\__init__.py" />
     <Compile Include="app\migrations\__init__.py" />
+    <Compile Include="cart\apps.py" />
+    <Compile Include="cart\models.py" />
+    <Compile Include="cart\urls.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="cart\services.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="cart\serializers.py" />
+    <Compile Include="cart\tests.py" />
+    <Compile Include="cart\views.py" />
+    <Compile Include="cart\__init__.py" />
     <Compile Include="manage.py" />
     <Compile Include="NeoMarketProektOtTochkiB2C\__init__.py" />
     <Compile Include="NeoMarketProektOtTochkiB2C\settings.py" />
@@ -72,6 +84,7 @@
     <Folder Include="app\templates\" />
     <Folder Include="app\templates\app\" />
     <Folder Include="NeoMarketProektOtTochkiB2C\" />
+    <Folder Include="cart\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="pytest.ini" />
