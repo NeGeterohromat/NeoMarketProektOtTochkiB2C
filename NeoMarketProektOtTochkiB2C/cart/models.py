@@ -12,6 +12,7 @@ class CartItem(models.Model):
         related_name='cart_items'
     )
     session_id = models.UUIDField(null=True, blank=True, db_index=True)
+    product_id = models.UUIDField(db_index=True, help_text="Денормализовано для эффективного batch-запроса в B2B")
     sku_id = models.UUIDField(db_index=True)
     quantity = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)

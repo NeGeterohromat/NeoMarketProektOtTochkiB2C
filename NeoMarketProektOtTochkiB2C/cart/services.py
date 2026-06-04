@@ -12,7 +12,6 @@ class CartService:
 
     @staticmethod
     def _get_identity(request):
-        """Возвращает (user, session_id). Если пользователь авторизован, session_id игнорируется."""
         user = request.user if request.user.is_authenticated else None
         session_id = None
         if not user:
@@ -27,29 +26,75 @@ class CartService:
         user, session_id = cls._get_identity(request)
         
         if user:
-            items = CartItem.objects.filter(user=user)
+            items = list(CartItem.objects.filter(user=user))
         else:
-            items = CartItem.objects.filter(session_id=session_id)
+            items = list(CartItem.objects.filter(session_id=session_id))
             
-        sku_ids = list(items.values_list('sku_id', flat=True))
-        b2b_info = cls.b2b_client.get_skus_info(sku_ids)
+        # Собираем уникальные product_id для одного batch-запроса
+        product_ids = list(set(str(item.product_id) for item in items if item.product_id))
         
+        sku_info_map = {}
+        if product_ids:
+            url = f'{cls.b2b_client.base_url}/api/v1/public/products/batch'
+            try:
+                # b2b.yaml: возвращает массив (list) ProductPublicResponse
+                products_data = cls.b2b_client._call_b2b(url,params={}, data={'product_ids': product_ids}, method='POST')
+                
+                for product in products_data:
+                    product_id = str(product['id'])
+                    status = product.get('status')
+                    is_product_available = (status == 'MODERATED')
+                    
+                    for sku in product.get('skus', []):
+                        sku_id = str(sku['id'])
+                        active_qty = sku.get('active_quantity', 0)
+                        
+                        is_available = is_product_available and (active_qty > 0)
+                        reason = None
+                        
+                        if not is_available:
+                            if not is_product_available:
+                                if status in ['BLOCKED', 'HARD_BLOCKED']:
+                                    reason = 'PRODUCT_BLOCKED'
+                                elif status == 'ON_MODERATION':
+                                    reason = 'ON_MODERATION'
+                                else:
+                                    reason = 'PRODUCT_DELETED'
+                            elif active_qty == 0:
+                                reason = 'OUT_OF_STOCK'
+                                
+                        sku_info_map[sku_id] = {
+                            'product_id': product_id,
+                            'name': sku.get('name', 'Неизвестный товар'),
+                            'price': sku.get('price', 0),
+                            'available_quantity': active_qty,
+                            'is_available': is_available,
+                            'unavailable_reason': reason
+                        }
+            except B2BUnavailableError:
+                raise  # Пробрасываем 503, как требует edge case #4
+
         cart_items_response = []
         subtotal = 0
         items_count = 0
         unavailable_count = 0
 
         for item in items:
-            info = b2b_info.get(str(item.sku_id), {})
-            is_available = info.get('is_available', False)
-            unavailable_reason = info.get('unavailable_reason')
+            sku_id_str = str(item.sku_id)
+            info = sku_info_map.get(sku_id_str)
             
-            # Если товара нет в B2B вообще, считаем его удаленным
+            # Если товара нет в ответе batch, B2B трактует это как unavailable (удален)
             if not info:
-                is_available = False
-                unavailable_reason = 'PRODUCT_DELETED'
-                info = {'price': 0, 'available_quantity': 0, 'product_id': str(uuid.uuid4()), 'name': 'Unknown'}
+                info = {
+                    'product_id': str(item.product_id),
+                    'name': 'Товар удален',
+                    'price': 0,
+                    'available_quantity': 0,
+                    'is_available': False,
+                    'unavailable_reason': 'PRODUCT_DELETED'
+                }
 
+            is_available = info['is_available']
             line_total = info['price'] * item.quantity if is_available else 0
             
             if is_available:
@@ -59,15 +104,15 @@ class CartService:
                 unavailable_count += 1
 
             cart_items_response.append({
-                'sku_id': str(item.sku_id),
-                'product_id': str(info['product_id']),
+                'sku_id': sku_id_str,
+                'product_id': info['product_id'],
                 'name': info['name'],
                 'quantity': item.quantity,
                 'unit_price': info['price'],
                 'line_total': line_total,
                 'available_quantity': info['available_quantity'],
                 'is_available': is_available,
-                'unavailable_reason': unavailable_reason
+                'unavailable_reason': info['unavailable_reason']
             })
 
         return {
@@ -84,48 +129,54 @@ class CartService:
         from .models import CartItem
         user, session_id = cls._get_identity(request)
         
-        # 1. Проверка в B2B перед добавлением
-        b2b_info = cls.b2b_client.get_skus_info([sku_id])
-        sku_info = b2b_info.get(str(sku_id))
-        
-        if not sku_info or not sku_info['is_available']:
-            reason = sku_info['unavailable_reason'] if sku_info else 'PRODUCT_DELETED'
-            raise ValueError(f"SKU unavailable: {reason}")
+        # 1. Проверка в B2B (получаем product_id и валидируем доступность)
+        url = f'{cls.b2b_client.base_url}/api/v1/public/skus/{sku_id}'
+        try:
+            sku_data = cls.b2b_client._call_b2b(url,params={}, method='GET')
+        except ValueError:
+            raise ValueError("SKU not found or unavailable")
+        except B2BUnavailableError:
+            raise B2BUnavailableError("B2B service unavailable")
             
-        if sku_info['available_quantity'] < quantity:
+        product_id = sku_data.get('product_id')
+        active_qty = sku_data.get('active_quantity', 0)
+        
+        if active_qty < quantity:
             raise ValueError("Insufficient stock")
-
+            
         # 2. Сохранение в БД
         with transaction.atomic():
             if user:
                 item, created = CartItem.objects.get_or_create(
                     user=user, sku_id=sku_id,
-                    defaults={'quantity': quantity}
+                    defaults={'product_id': product_id, 'quantity': quantity}
                 )
             else:
                 item, created = CartItem.objects.get_or_create(
                     session_id=session_id, sku_id=sku_id,
-                    defaults={'quantity': quantity}
-            )
-            
+                    defaults={'product_id': product_id, 'quantity': quantity}
+                )
+                
             if not created:
                 item.quantity += quantity
-                # Проверка на превышение остатка после сложения
-                if item.quantity > sku_info['available_quantity']:
-                    raise ValueError("Total quantity exceeds available stock")
                 item.save()
                 
-        return created # True = 201, False = 200
+        return created
 
     @classmethod
     def update_item(cls, request, sku_id: str, quantity: int):
         from .models import CartItem
         user, session_id = cls._get_identity(request)
         
-        b2b_info = cls.b2b_client.get_skus_info([sku_id])
-        sku_info = b2b_info.get(str(sku_id))
-        
-        if sku_info and sku_info['available_quantity'] < quantity:
+        url = f'{cls.b2b_client.base_url}/api/v1/public/skus/{sku_id}'
+        try:
+            sku_data = cls.b2b_client._call_b2b(url, params={}, method='GET')
+        except ValueError:
+            raise ValueError("SKU not found")
+        except B2BUnavailableError:
+            raise B2BUnavailableError("B2B service unavailable")
+            
+        if sku_data.get('active_quantity', 0) < quantity:
             raise ValueError("Insufficient stock for new quantity")
 
         if user:
@@ -170,7 +221,7 @@ class CartService:
             for g_item in guest_items:
                 auth_item = CartItem.objects.filter(user=user, sku_id=g_item.sku_id).first()
                 if auth_item:
-                    # Конфликт: берем MAX
+                    # Конфликт: берем MAX, как указано в flowchart
                     auth_item.quantity = max(auth_item.quantity, g_item.quantity)
                     auth_item.save()
                     g_item.delete()

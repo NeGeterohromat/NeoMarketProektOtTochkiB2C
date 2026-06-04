@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="2.656" timestamp="2026-06-04T19:23:41.096127+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="cart.tests.CartAPITests" name="test_add_sku_increments_quantity_if_already_in_cart" file="cart\tests.py" line="139" time="0.655"><failure message="AssertionError: 409 != 201">self = &lt;cart.tests.CartAPITests testMethod=test_add_sku_increments_quantity_if_already_in_cart&gt;
+
+    def test_add_sku_increments_quantity_if_already_in_cart(self):
+        with patch.object(B2BClient,'_call_b2b') as mock_post:
+            mock_post.side_effect = self._mock_b2b_skus()
+            self.client.credentials(HTTP_X_SESSION_ID=self.session_id)
+            url = reverse('cart:cart-items')
+            # Первое добавление
+            resp1 = self.client.post(url, {'sku_id': str(self.sku_id), 'quantity': 2})
+&gt;           self.assertEqual(resp1.status_code, 201)
+E           AssertionError: 409 != 201
+
+cart\tests.py:147: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Conflict: /api/v1/cart/items
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_get_cart_enriched_with_b2b_data" file="cart\tests.py" line="156" time="0.414"><failure message="django.db.utils.IntegrityError: NOT NULL constraint failed: cart_items.product_id">self = &lt;django.db.backends.utils.CursorWrapper object at 0x000001F9ED1A6890&gt;
+sql = 'INSERT INTO "cart_items" ("id", "user_id", "session_id", "product_id", "sku_id", "quantity", "created_at", "updated_at") VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
+params = ('13948274e9454fde9daa59375106f3ef', None, '5647eb1df475415c90eaed37a75a21c0', None, '18250b3eee20482cb29d548d42ae0067', 2, ...)
+ignored_wrapper_args = (False, {'connection': &lt;DatabaseWrapper vendor='sqlite' alias='default'&gt;, 'cursor': &lt;django.db.backends.utils.CursorWrapper object at 0x000001F9ED1A6890&gt;})
+
+    def _execute(self, sql, params, *ignored_wrapper_args):
+        # Raise a warning during app initialization (stored_app_configs is only
+        # ever set during testing).
+        if not apps.ready and not apps.stored_app_configs:
+            warnings.warn(self.APPS_NOT_READY_WARNING_MSG, category=RuntimeWarning)
+        self.db.validate_no_broken_transaction()
+        with self.db.wrap_database_errors:
+            if params is None:
+                # params default might be backend specific.
+                return self.cursor.execute(sql)
+            else:
+&gt;               return self.cursor.execute(sql, params)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+env\Lib\site-packages\django\db\backends\utils.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.backends.sqlite3.base.SQLiteCursorWrapper object at 0x000001F9ED13A600&gt;
+query = 'INSERT INTO "cart_items" ("id", "user_id", "session_id", "product_id", "sku_id", "quantity", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+params = ('13948274e9454fde9daa59375106f3ef', None, '5647eb1df475415c90eaed37a75a21c0', None, '18250b3eee20482cb29d548d42ae0067', 2, ...)
+
+    def execute(self, query, params=None):
+        if params is None:
+            return super().execute(query)
+        # Extract names if params is a mapping, i.e. "pyformat" style is used.
+        param_names = list(params) if isinstance(params, Mapping) else None
+        query = self.convert_query(query, param_names=param_names)
+&gt;       return super().execute(query, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       sqlite3.IntegrityError: NOT NULL constraint failed: cart_items.product_id
+
+env\Lib\site-packages\django\db\backends\sqlite3\base.py:360: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;cart.tests.CartAPITests testMethod=test_get_cart_enriched_with_b2b_data&gt;
+
+    def test_get_cart_enriched_with_b2b_data(self):
+        with patch.object(B2BClient,'_call_b2b') as mock_post:
+            mock_post.side_effect = self._mock_b2b_skus()
+            self.client.credentials(HTTP_X_SESSION_ID=self.session_id)
+    
+&gt;           CartItem.objects.create(session_id=self.session_id, sku_id=self.sku_id, quantity=2)
+
+cart\tests.py:162: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:665: in create
+    obj.save(force_insert=True, using=self.db)
+env\Lib\site-packages\django\db\models\base.py:902: in save
+    self.save_base(
+env\Lib\site-packages\django\db\models\base.py:1008: in save_base
+    updated = self._save_table(
+env\Lib\site-packages\django\db\models\base.py:1169: in _save_table
+    results = self._do_insert(
+env\Lib\site-packages\django\db\models\base.py:1210: in _do_insert
+    return manager._insert(
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\sql\compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+env\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+env\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+env\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+env\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.backends.sqlite3.base.SQLiteCursorWrapper object at 0x000001F9ED13A600&gt;
+query = 'INSERT INTO "cart_items" ("id", "user_id", "session_id", "product_id", "sku_id", "quantity", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+params = ('13948274e9454fde9daa59375106f3ef', None, '5647eb1df475415c90eaed37a75a21c0', None, '18250b3eee20482cb29d548d42ae0067', 2, ...)
+
+    def execute(self, query, params=None):
+        if params is None:
+            return super().execute(query)
+        # Extract names if params is a mapping, i.e. "pyformat" style is used.
+        param_names = list(params) if isinstance(params, Mapping) else None
+        query = self.convert_query(query, param_names=param_names)
+&gt;       return super().execute(query, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       django.db.utils.IntegrityError: NOT NULL constraint failed: cart_items.product_id
+
+env\Lib\site-packages\django\db\backends\sqlite3\base.py:360: IntegrityError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_guest_cart_merged_on_login" file="cart\tests.py" line="195" time="0.411"><failure message="django.db.utils.IntegrityError: NOT NULL constraint failed: cart_items.product_id">self = &lt;django.db.backends.utils.CursorWrapper object at 0x000001F9ED275810&gt;
+sql = 'INSERT INTO "cart_items" ("id", "user_id", "session_id", "product_id", "sku_id", "quantity", "created_at", "updated_at") VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
+params = ('008b3bfaab00484592ec6a8ae5252abf', 1, None, None, 'fd982ac9aea14366907a6096b7dc4ff4', 5, ...)
+ignored_wrapper_args = (False, {'connection': &lt;DatabaseWrapper vendor='sqlite' alias='default'&gt;, 'cursor': &lt;django.db.backends.utils.CursorWrapper object at 0x000001F9ED275810&gt;})
+
+    def _execute(self, sql, params, *ignored_wrapper_args):
+        # Raise a warning during app initialization (stored_app_configs is only
+        # ever set during testing).
+        if not apps.ready and not apps.stored_app_configs:
+            warnings.warn(self.APPS_NOT_READY_WARNING_MSG, category=RuntimeWarning)
+        self.db.validate_no_broken_transaction()
+        with self.db.wrap_database_errors:
+            if params is None:
+                # params default might be backend specific.
+                return self.cursor.execute(sql)
+            else:
+&gt;               return self.cursor.execute(sql, params)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+env\Lib\site-packages\django\db\backends\utils.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.backends.sqlite3.base.SQLiteCursorWrapper object at 0x000001F9ED37F920&gt;
+query = 'INSERT INTO "cart_items" ("id", "user_id", "session_id", "product_id", "sku_id", "quantity", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+params = ('008b3bfaab00484592ec6a8ae5252abf', 1, None, None, 'fd982ac9aea14366907a6096b7dc4ff4', 5, ...)
+
+    def execute(self, query, params=None):
+        if params is None:
+            return super().execute(query)
+        # Extract names if params is a mapping, i.e. "pyformat" style is used.
+        param_names = list(params) if isinstance(params, Mapping) else None
+        query = self.convert_query(query, param_names=param_names)
+&gt;       return super().execute(query, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       sqlite3.IntegrityError: NOT NULL constraint failed: cart_items.product_id
+
+env\Lib\site-packages\django\db\backends\sqlite3\base.py:360: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;cart.tests.CartAPITests testMethod=test_guest_cart_merged_on_login&gt;
+
+    def test_guest_cart_merged_on_login(self):
+        with patch.object(B2BClient,'_call_b2b') as mock_post:
+            mock_post.side_effect = self._mock_b2b_skus()
+    
+            # 1. Гость добавляет 3 шт.
+            self.client.credentials(HTTP_X_SESSION_ID=self.session_id)
+            url = reverse('cart:cart-items')
+            self.client.post(url, {'sku_id': str(self.sku_id), 'quantity': 3})
+    
+            # 2. Пользователь уже имеет 5 шт. этого SKU
+&gt;           CartItem.objects.create(user=self.user, sku_id=self.sku_id, quantity=5)
+
+cart\tests.py:206: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:665: in create
+    obj.save(force_insert=True, using=self.db)
+env\Lib\site-packages\django\db\models\base.py:902: in save
+    self.save_base(
+env\Lib\site-packages\django\db\models\base.py:1008: in save_base
+    updated = self._save_table(
+env\Lib\site-packages\django\db\models\base.py:1169: in _save_table
+    results = self._do_insert(
+env\Lib\site-packages\django\db\models\base.py:1210: in _do_insert
+    return manager._insert(
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\sql\compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+env\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+env\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+env\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+env\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.backends.sqlite3.base.SQLiteCursorWrapper object at 0x000001F9ED37F920&gt;
+query = 'INSERT INTO "cart_items" ("id", "user_id", "session_id", "product_id", "sku_id", "quantity", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+params = ('008b3bfaab00484592ec6a8ae5252abf', 1, None, None, 'fd982ac9aea14366907a6096b7dc4ff4', 5, ...)
+
+    def execute(self, query, params=None):
+        if params is None:
+            return super().execute(query)
+        # Extract names if params is a mapping, i.e. "pyformat" style is used.
+        param_names = list(params) if isinstance(params, Mapping) else None
+        query = self.convert_query(query, param_names=param_names)
+&gt;       return super().execute(query, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       django.db.utils.IntegrityError: NOT NULL constraint failed: cart_items.product_id
+
+env\Lib\site-packages\django\db\backends\sqlite3\base.py:360: IntegrityError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Conflict: /api/v1/cart/items
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_unavailable_sku_shown_with_reason" file="cart\tests.py" line="176" time="0.415"><failure message="django.db.utils.IntegrityError: NOT NULL constraint failed: cart_items.product_id">self = &lt;django.db.backends.utils.CursorWrapper object at 0x000001F9ED718350&gt;
+sql = 'INSERT INTO "cart_items" ("id", "user_id", "session_id", "product_id", "sku_id", "quantity", "created_at", "updated_at") VALUES (%s, %s, %s, %s, %s, %s, %s, %s)'
+params = ('d467dcebfc184f31ba9a6c397960375e', None, 'a62d1d12bd3d493e915df77040bd4f4d', None, '96b105aa732b48a896147c47502183de', 1, ...)
+ignored_wrapper_args = (False, {'connection': &lt;DatabaseWrapper vendor='sqlite' alias='default'&gt;, 'cursor': &lt;django.db.backends.utils.CursorWrapper object at 0x000001F9ED718350&gt;})
+
+    def _execute(self, sql, params, *ignored_wrapper_args):
+        # Raise a warning during app initialization (stored_app_configs is only
+        # ever set during testing).
+        if not apps.ready and not apps.stored_app_configs:
+            warnings.warn(self.APPS_NOT_READY_WARNING_MSG, category=RuntimeWarning)
+        self.db.validate_no_broken_transaction()
+        with self.db.wrap_database_errors:
+            if params is None:
+                # params default might be backend specific.
+                return self.cursor.execute(sql)
+            else:
+&gt;               return self.cursor.execute(sql, params)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+env\Lib\site-packages\django\db\backends\utils.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.backends.sqlite3.base.SQLiteCursorWrapper object at 0x000001F9ED24F800&gt;
+query = 'INSERT INTO "cart_items" ("id", "user_id", "session_id", "product_id", "sku_id", "quantity", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+params = ('d467dcebfc184f31ba9a6c397960375e', None, 'a62d1d12bd3d493e915df77040bd4f4d', None, '96b105aa732b48a896147c47502183de', 1, ...)
+
+    def execute(self, query, params=None):
+        if params is None:
+            return super().execute(query)
+        # Extract names if params is a mapping, i.e. "pyformat" style is used.
+        param_names = list(params) if isinstance(params, Mapping) else None
+        query = self.convert_query(query, param_names=param_names)
+&gt;       return super().execute(query, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       sqlite3.IntegrityError: NOT NULL constraint failed: cart_items.product_id
+
+env\Lib\site-packages\django\db\backends\sqlite3\base.py:360: IntegrityError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;cart.tests.CartAPITests testMethod=test_unavailable_sku_shown_with_reason&gt;
+
+    def test_unavailable_sku_shown_with_reason(self):
+        with patch.object(B2BClient,'_call_b2b') as mock_post:
+            mock_post.side_effect = self._mock_b2b_skus(available=False, qty=0)
+            self.client.credentials(HTTP_X_SESSION_ID=self.session_id)
+    
+&gt;           CartItem.objects.create(session_id=self.session_id, sku_id=self.sku_id, quantity=1)
+
+cart\tests.py:182: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:665: in create
+    obj.save(force_insert=True, using=self.db)
+env\Lib\site-packages\django\db\models\base.py:902: in save
+    self.save_base(
+env\Lib\site-packages\django\db\models\base.py:1008: in save_base
+    updated = self._save_table(
+env\Lib\site-packages\django\db\models\base.py:1169: in _save_table
+    results = self._do_insert(
+env\Lib\site-packages\django\db\models\base.py:1210: in _do_insert
+    return manager._insert(
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\sql\compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+env\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+env\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+env\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+env\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.backends.sqlite3.base.SQLiteCursorWrapper object at 0x000001F9ED24F800&gt;
+query = 'INSERT INTO "cart_items" ("id", "user_id", "session_id", "product_id", "sku_id", "quantity", "created_at", "updated_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+params = ('d467dcebfc184f31ba9a6c397960375e', None, 'a62d1d12bd3d493e915df77040bd4f4d', None, '96b105aa732b48a896147c47502183de', 1, ...)
+
+    def execute(self, query, params=None):
+        if params is None:
+            return super().execute(query)
+        # Extract names if params is a mapping, i.e. "pyformat" style is used.
+        param_names = list(params) if isinstance(params, Mapping) else None
+        query = self.convert_query(query, param_names=param_names)
+&gt;       return super().execute(query, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       django.db.utils.IntegrityError: NOT NULL constraint failed: cart_items.product_id
+
+env\Lib\site-packages\django\db\backends\sqlite3\base.py:360: IntegrityError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

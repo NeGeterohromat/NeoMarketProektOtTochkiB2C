@@ -56,6 +56,7 @@
     <Compile Include="app\__init__.py" />
     <Compile Include="app\migrations\__init__.py" />
     <Compile Include="cart\apps.py" />
+    <Compile Include="cart\migrations\__init__.py" />
     <Compile Include="cart\models.py" />
     <Compile Include="cart\urls.py">
       <SubType>Code</SubType>
@@ -83,6 +84,7 @@
     <Folder Include="app\static\app\scripts\" />
     <Folder Include="app\templates\" />
     <Folder Include="app\templates\app\" />
+    <Folder Include="cart\migrations\" />
     <Folder Include="NeoMarketProektOtTochkiB2C\" />
     <Folder Include="cart\" />
   </ItemGroup>

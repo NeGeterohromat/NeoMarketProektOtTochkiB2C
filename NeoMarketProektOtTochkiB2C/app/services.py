@@ -199,9 +199,8 @@ class B2BClient:
           "available_quantity": b2b_sku['active_quantity'],
           "images": b2b_sku['images']
         }
-
+"""
     def get_skus_info(self, sku_ids: list) -> dict:
-        """Получает информацию о конкретных SKU для обогащения корзины"""
         if not sku_ids:
             return {}
         
@@ -238,3 +237,4 @@ class B2BClient:
             raise
         except Exception:
             return {} # Fallback для тестов или частичной недоступности
+"""
