@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="4" time="2.199" timestamp="2026-06-03T21:10:33.254039+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="cart.tests.CartAPITests" name="test_add_sku_increments_quantity_if_already_in_cart" file="cart\tests.py" line="50" time="0.625"><failure message="AssertionError: 404 != 201">self = &lt;cart.tests.CartAPITests testMethod=test_add_sku_increments_quantity_if_already_in_cart&gt;
+mock_post = &lt;MagicMock name='post' id='2189987147600'&gt;
+
+    @patch('cart.services.requests.post')
+    def test_add_sku_increments_quantity_if_already_in_cart(self, mock_post):
+        mock_post.side_effect = self._mock_b2b_skus()
+        self.client.credentials(HTTP_X_SESSION_ID=self.session_id)
+        url = reverse('cart-items')
+        # Первое добавление
+        resp1 = self.client.post(url, {'sku_id': str(self.sku_id), 'quantity': 2})
+&gt;       self.assertEqual(resp1.status_code, 201)
+E       AssertionError: 404 != 201
+
+cart\tests.py:58: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/cart/items
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_get_cart_enriched_with_b2b_data" file="cart\tests.py" line="67" time="0.413"><failure message="AssertionError: 0 != 2">self = &lt;cart.tests.CartAPITests testMethod=test_get_cart_enriched_with_b2b_data&gt;
+mock_post = &lt;MagicMock name='post' id='2189987147984'&gt;
+
+    @patch('cart.services.requests.post')
+    def test_get_cart_enriched_with_b2b_data(self, mock_post):
+        mock_post.side_effect = self._mock_b2b_skus()
+        self.client.credentials(HTTP_X_SESSION_ID=self.session_id)
+    
+        CartItem.objects.create(session_id=self.session_id, sku_id=self.sku_id, quantity=2)
+    
+        url = reverse('cart-detail')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+    
+        data = resp.json()
+&gt;       self.assertEqual(data['items_count'], 2)
+E       AssertionError: 0 != 2
+
+cart\tests.py:80: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_guest_cart_merged_on_login" file="cart\tests.py" line="105" time="0.421"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/cart/items
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_unavailable_sku_shown_with_reason" file="cart\tests.py" line="86" time="0.421"><failure message="AssertionError: 'PRODUCT_DELETED' != 'OUT_OF_STOCK'&#10;- PRODUCT_DELETED&#10;+ OUT_OF_STOCK">self = &lt;cart.tests.CartAPITests testMethod=test_unavailable_sku_shown_with_reason&gt;
+mock_post = &lt;MagicMock name='post' id='2189987431248'&gt;
+
+    @patch('cart.services.requests.post')
+    def test_unavailable_sku_shown_with_reason(self, mock_post):
+        mock_post.side_effect = self._mock_b2b_skus(available=False, qty=0)
+        self.client.credentials(HTTP_X_SESSION_ID=self.session_id)
+    
+        CartItem.objects.create(session_id=self.session_id, sku_id=self.sku_id, quantity=1)
+    
+        url = reverse('cart-detail')
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+    
+        data = resp.json()
+        item = data['items'][0]
+        self.assertFalse(item['is_available'])
+&gt;       self.assertEqual(item['unavailable_reason'], 'OUT_OF_STOCK')
+E       AssertionError: 'PRODUCT_DELETED' != 'OUT_OF_STOCK'
+E       - PRODUCT_DELETED
+E       + OUT_OF_STOCK
+
+cart\tests.py:101: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

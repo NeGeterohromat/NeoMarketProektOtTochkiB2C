@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.978" timestamp="2026-06-03T21:54:23.078971+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="cart.tests.CartAPITests" name="test_add_sku_increments_quantity_if_already_in_cart" file="cart\tests.py" line="54" time="0.654"><failure message="AssertionError: 404 != 201">self = &lt;cart.tests.CartAPITests testMethod=test_add_sku_increments_quantity_if_already_in_cart&gt;
+mock_post = &lt;MagicMock name='post' id='2546807668048'&gt;
+
+    @patch('app.services.requests.post')
+    def test_add_sku_increments_quantity_if_already_in_cart(self,mock_post):
+        mock_post.side_effect = self._mock_b2b_skus()
+        self.client.credentials(HTTP_X_SESSION_ID=self.session_id)
+        url = reverse('cart:cart-items')
+        # Первое добавление
+        resp1 = self.client.post(url, {'sku_id': str(self.sku_id), 'quantity': 2})
+&gt;       self.assertEqual(resp1.status_code, 201)
+E       AssertionError: 404 != 201
+
+cart\tests.py:62: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/cart/items
+--------------------------------- Captured Out ---------------------------------
+{'sku_ids': ['0aa5844e-0c5f-4165-810d-218b07f39933']}
+[{'id': '0aa5844e-0c5f-4165-810d-218b07f39933', 'product_id': '318f727d-6543-4422-9720-fe189b73f360', 'name': 'Test Product', 'price': 1000, 'active_quantity': 10, 'status': 'MODERATED'}]
+{}
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="1.105" timestamp="2026-06-03T21:13:36.446895+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="cart.tests.CartAPITests" name="test_add_sku_increments_quantity_if_already_in_cart" file="cart\tests.py" line="50" time="0.763"><failure message="AssertionError: 404 != 201">self = &lt;cart.tests.CartAPITests testMethod=test_add_sku_increments_quantity_if_already_in_cart&gt;
+mock_post = &lt;MagicMock name='post' id='1576166155792'&gt;
+
+    @patch('cart.services.requests.post')
+    def test_add_sku_increments_quantity_if_already_in_cart(self, mock_post):
+        mock_post.side_effect = self._mock_b2b_skus()
+        self.client.credentials(HTTP_X_SESSION_ID=self.session_id)
+        url = reverse('cart-items')
+        # Первое добавление
+        resp1 = self.client.post(url, {'sku_id': str(self.sku_id), 'quantity': 2})
+&gt;       self.assertEqual(resp1.status_code, 201)
+E       AssertionError: 404 != 201
+
+cart\tests.py:58: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/cart/items
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>
