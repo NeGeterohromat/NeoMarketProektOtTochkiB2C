@@ -13,7 +13,7 @@ class B2BClient:
         self.timeout = (5.0, 10.0)  # (connect timeout, read timeout) в секундах
     
     def _get_headers(self) -> dict:
-        return {'X-Service-Key': self.service_key}
+        return {'X-Service-Key': self.service_key, 'Content-Type': 'application/json'}
 
     def _call_b2b_by_func(self,url,params,data,func):
         return func(
@@ -163,7 +163,7 @@ class B2BClient:
         params = {}
 
         try:
-            b2b_answer = self._call_b2b(url=url,params=params,data=data,method='POST')
+            b2b_answer = self._call_b2b(url=url,params=params,data=data,method='GET')
             if b2b_answer['status']=='BLOCKED' or b2b_answer['status']=='HARD_BLOCKED':
                 raise BlockedProductError('Товар недоступен')
             return self._transform_product_from_uuid_get(b2b_answer)

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.409" timestamp="2026-06-05T17:25:28.987243+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="app.tests.ProductDetailAPITests" name="test_string_url_works" file="app\tests.py" line="687" time="0.218"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+111
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>
