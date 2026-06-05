@@ -39,7 +39,6 @@ ALLOWED_HOSTS = []
 # https://docs.djangoproject.com/en/2.1/ref/settings/#std:setting-INSTALLED_APPS
 INSTALLED_APPS = [
     'app',
-    'cart.apps.CartAppConfig',
     # Add your apps here to enable them
     'django.contrib.admin',
     'django.contrib.auth',
@@ -47,6 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cart.apps.CartAppConfig',
+    'ord.apps.OrdAppConfig',
 ]
 
 # Middleware framework

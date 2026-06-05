@@ -199,42 +199,26 @@ class B2BClient:
           "available_quantity": b2b_sku['active_quantity'],
           "images": b2b_sku['images']
         }
-"""
-    def get_skus_info(self, sku_ids: list) -> dict:
-        if not sku_ids:
-            return {}
-        
-        # Предполагаем, что B2B имеет эндпоинт для батч-запроса SKU
-        url = f'{self.base_url}/api/v1/public/skus/batch'
+    def get_products_batch(self, product_ids: list[uuid.UUID]) -> list[dict]:
+        """Вызов GET/POST /api/v1/public/products/batch для валидации перед резервом"""
+        url = f'{self.base_url}/api/v1/public/products/batch'
+        data = {'product_ids': [str(pid) for pid in product_ids]}
         try:
-            response_data = self._call_b2b(url,params={}, data={'sku_ids': [str(sid) for sid in sku_ids]}, method='POST')
-            # Ожидаем формат: {'items': [{'id': '...', 'product_id': '...', 'price': 100, 'active_quantity': 5, 'status': 'MODERATED'}]}
-            result = {}
-            for item in response_data.get('items', []):
-                sku_id = str(item['id'])
-                is_available = item.get('active_quantity', 0) > 0 and item.get('status') == 'MODERATED'
-                reason = None
-                if not is_available:
-                    if item.get('active_quantity', 0) == 0:
-                        reason = 'OUT_OF_STOCK'
-                    elif item.get('status') in ['BLOCKED', 'HARD_BLOCKED']:
-                        reason = 'PRODUCT_BLOCKED'
-                    elif item.get('status') == 'DELETED':
-                        reason = 'PRODUCT_DELETED'
-                    elif item.get('status') == 'EDITED':
-                        reason = 'ON_MODERATION'
-                
-                result[sku_id] = {
-                    'product_id': item.get('product_id'),
-                    'name': item.get('name', 'Unknown'),
-                    'price': item.get('price', 0),
-                    'available_quantity': item.get('active_quantity', 0),
-                    'is_available': is_available,
-                    'unavailable_reason': reason
-                }
-            return result
-        except B2BUnavailableError:
-            raise
-        except Exception:
-            return {} # Fallback для тестов или частичной недоступности
-"""
+            return self._call_b2b(url, params={}, data=data, method='POST')
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                raise ValueError('Product not found')
+
+    def reserve_inventory(self, idempotency_key: uuid.UUID, order_id: uuid.UUID, items: list[dict]) -> dict:
+        """Вызов POST /api/v1/inventory/reserve (all-or-nothing)"""
+        url = f'{self.base_url}/api/v1/inventory/reserve'
+        data = {
+            'idempotency_key': str(idempotency_key),
+            'order_id': str(order_id),
+            'items': [{'sku_id': str(i['sku_id']), 'quantity': i['quantity']} for i in items]
+        }
+        try:
+            return self._call_b2b(url, params={}, data=data, method='POST')
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                raise ValueError('Product not found')

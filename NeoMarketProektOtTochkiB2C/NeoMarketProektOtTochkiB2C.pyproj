@@ -73,6 +73,19 @@
     <Compile Include="NeoMarketProektOtTochkiB2C\settings.py" />
     <Compile Include="NeoMarketProektOtTochkiB2C\urls.py" />
     <Compile Include="NeoMarketProektOtTochkiB2C\wsgi.py" />
+    <Compile Include="ord\apps.py" />
+    <Compile Include="ord\migrations\__init__.py" />
+    <Compile Include="ord\models.py" />
+    <Compile Include="ord\serializers.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ord\services.py" />
+    <Compile Include="ord\urls.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ord\tests.py" />
+    <Compile Include="ord\views.py" />
+    <Compile Include="ord\__init__.py" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="app\" />
@@ -87,8 +100,13 @@
     <Folder Include="cart\migrations\" />
     <Folder Include="NeoMarketProektOtTochkiB2C\" />
     <Folder Include="cart\" />
+    <Folder Include="ord\" />
+    <Folder Include="ord\migrations\" />
+    <Folder Include="ord\templates\" />
+    <Folder Include="ord\templates\ord\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="ord\templates\ord\index.html" />
     <Content Include="pytest.ini" />
     <Content Include="requirements.txt" />
     <Content Include="db.sqlite3" />
