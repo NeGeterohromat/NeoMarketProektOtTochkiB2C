@@ -4,12 +4,14 @@ when you run "manage.py test".
 """
 
 import requests
+import uuid
 from requests.models import Response
 from unittest.mock import patch, MagicMock, Mock
 from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
+from django.conf import settings
 
 from app.services import B2BClient
 
@@ -480,7 +482,7 @@ class ProductDetailAPITests(APITestCase):
         self.service_key = 'test-service-key'
         self.client.defaults['HTTP_X_SERVICE_KEY'] = self.service_key
         self.category_id = '123e4567-e89b-12d3-a456-426614174001'
-        self.product_id = '770e8400-e29b-41d4-a716-446655440002'
+        self.product_id = str(uuid.uuid4())
         self.seller_id = '870e8400-e29b-41d4-a716-446655440003'
 
         # Моковый ответ от B2B для списка данных о товаре
@@ -682,6 +684,14 @@ class ProductDetailAPITests(APITestCase):
             data = response.json()
             self.assertEqual(data['code'], 'PRODUCT_UNAVAILABLE')
             self.assertEqual(data['message'], 'Товар недоступен')
+
+    def test_string_url_works(self):
+        with patch.object(B2BClient, '_call_b2b') as mock_b2b:
+            mock_b2b.return_value = self.mock_b2b_product_data_response
+            url = f'/api/v1/catalog/products/{self.product_id}'
+            response = self.client.get(url)
+
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
 
