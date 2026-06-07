@@ -21,3 +21,10 @@ class B2BUnavailableError(Exception):
 
 class BlockedProductError(Exception):
     pass
+
+class ReserveFailedError(Exception):
+    def __init__(self,failed_items):
+        self.failed_items=failed_items
+
+class CheckoutValidationError(Exception):
+    pass

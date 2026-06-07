@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.974" timestamp="2026-06-07T15:28:34.944602+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_idempotency_returns_existing_order" file="ord\tests.py" line="63" time="0.657"><failure message="AssertionError: 400 != 201">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_idempotency_returns_existing_order&gt;
+
+    def test_idempotency_returns_existing_order(self):
+        """Unhappy path: повторный запрос с тем же idempotency_key возвращает существующий заказ"""
+        # Создаём заказ вручную
+        existing_order = Order.objects.create(
+            user=self.user, idempotency_key=self.idempotency_key,
+            address_id=uuid.uuid4(), payment_method_id=uuid.uuid4(),
+            status='PAID', total_price=100000
+        )
+    
+        response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+    
+&gt;       self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+E       AssertionError: 400 != 201
+
+ord\tests.py:75: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

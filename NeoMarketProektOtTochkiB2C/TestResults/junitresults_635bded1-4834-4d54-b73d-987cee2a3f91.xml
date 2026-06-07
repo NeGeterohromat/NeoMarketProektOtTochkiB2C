@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="4" time="2.090" timestamp="2026-06-07T16:50:39.192509+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_b2b_unavailable_returns_503" file="ord\tests.py" line="99" time="0.658"><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Service Unavailable: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_checkout_creates_paid_order_with_fixed_prices" file="ord\tests.py" line="30" time="0.427"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+Order 339adaa9-9978-4eb2-9315-486c7dd12827 (PAID)
+{'id': '339adaa9-9978-4eb2-9315-486c7dd12827', 'user': &lt;User: testuser&gt;, 'address_id': '014f8d34-ff30-43f9-95b2-368c8dfacbce', 'payment_method_id': 'ef7c92c1-2c1d-4713-850d-afd845752e43', 'comment': 'Test order', 'status': 'PAID', 'total_price': 300000, 'items': [{'id': '26100735-b4b9-410b-8859-393076bfc41e', 'sku_id': '161ef5b1-0749-4cd5-8873-3a2927dbc462', 'product_id': '45d40c72-57e4-4907-87f1-89b34f6ec3cc', 'quantity': 2, 'unit_price': 150000, 'line_total': 300000}], 'created_at': '2026-06-07T11:50:40.446498Z'}
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_idempotency_returns_existing_order" file="ord\tests.py" line="73" time="0.416"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+Order 6817b025-88b9-43b2-8d17-06c0337c532b (PAID)
+{'id': '6817b025-88b9-43b2-8d17-06c0337c532b', 'user': &lt;User: testuser&gt;, 'address_id': '8b6dc71f-049f-4c6f-aeeb-874b51e9036c', 'payment_method_id': '59cab7ff-1ae2-40be-ba23-63165160b9e9', 'comment': '', 'status': 'PAID', 'total_price': 100000, 'items': [{'id': 'ae39a629-f2de-4cfd-9844-075f3094a5ca', 'sku_id': '05a04033-60b5-4ca0-bf87-d011f65e0adf', 'product_id': 'fa500b95-de58-43cf-85d0-10a08cedf585', 'quantity': 2, 'unit_price': 150000, 'line_total': 300000}], 'created_at': '2026-06-07T11:50:40.863496Z'}
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_partial_reserve_failure_returns_409" file="ord\tests.py" line="60" time="0.413"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Conflict: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

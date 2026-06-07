@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="2.501" timestamp="2026-06-05T21:40:55.204113+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_b2b_unavailable_returns_503" file="ord\tests.py" line="69" time="0.620"><failure message="ModuleNotFoundError: No module named 'orders'">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_b2b_unavailable_returns_503&gt;
+
+    def test_b2b_unavailable_returns_503(self):
+        """Unhappy path: B2B недоступен -&gt; 503"""
+&gt;       with patch('orders.services.B2BClient.reserve_inventory', side_effect=Exception('ConnectionError')):
+
+ord\tests.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\mock.py:1427: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\pkgutil.py:700: in resolve_name
+    mod = importlib.import_module(modname)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1204: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1176: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'orders', import_ = &lt;function _gcd_import at 0x000001B12A0C3D80&gt;
+
+&gt;   ???
+E   ModuleNotFoundError: No module named 'orders'
+
+&lt;frozen importlib._bootstrap&gt;:1140: ModuleNotFoundError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_checkout_creates_paid_order_with_fixed_prices" file="ord\tests.py" line="25" time="0.417"><failure message="ModuleNotFoundError: No module named 'orders'">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_checkout_creates_paid_order_with_fixed_prices&gt;
+
+    def test_checkout_creates_paid_order_with_fixed_prices(self):
+        """Happy path: успешный чекаут, статус PAID, цены зафиксированы"""
+&gt;       with patch('orders.services.B2BClient.reserve_inventory') as mock_reserve:
+
+ord\tests.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\mock.py:1427: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\pkgutil.py:700: in resolve_name
+    mod = importlib.import_module(modname)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1204: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1176: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'orders', import_ = &lt;function _gcd_import at 0x000001B12A0C3D80&gt;
+
+&gt;   ???
+E   ModuleNotFoundError: No module named 'orders'
+
+&lt;frozen importlib._bootstrap&gt;:1140: ModuleNotFoundError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_idempotency_returns_existing_order" file="ord\tests.py" line="53" time="0.414"><failure message="django.db.utils.OperationalError: no such table: ord_order">self = &lt;django.db.backends.utils.CursorWrapper object at 0x000001B130C6F750&gt;
+sql = 'INSERT INTO "ord_order" ("id", "user_id", "idempotency_key", "address_id", "payment_method_id", "comment", "status", "total_price", "created_at") VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)'
+params = ('4f080a3de4154deeb68711f0e8afc58b', 1, 'b37030712bec4031a71d8d1871375899', '6895033c16a94fe486348476baead3d7', '2185da44ac4c42fab98bc100e1e1079f', '', ...)
+ignored_wrapper_args = (False, {'connection': &lt;DatabaseWrapper vendor='sqlite' alias='default'&gt;, 'cursor': &lt;django.db.backends.utils.CursorWrapper object at 0x000001B130C6F750&gt;})
+
+    def _execute(self, sql, params, *ignored_wrapper_args):
+        # Raise a warning during app initialization (stored_app_configs is only
+        # ever set during testing).
+        if not apps.ready and not apps.stored_app_configs:
+            warnings.warn(self.APPS_NOT_READY_WARNING_MSG, category=RuntimeWarning)
+        self.db.validate_no_broken_transaction()
+        with self.db.wrap_database_errors:
+            if params is None:
+                # params default might be backend specific.
+                return self.cursor.execute(sql)
+            else:
+&gt;               return self.cursor.execute(sql, params)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+env\Lib\site-packages\django\db\backends\utils.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.backends.sqlite3.base.SQLiteCursorWrapper object at 0x000001B1307ABAD0&gt;
+query = 'INSERT INTO "ord_order" ("id", "user_id", "idempotency_key", "address_id", "payment_method_id", "comment", "status", "total_price", "created_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+params = ('4f080a3de4154deeb68711f0e8afc58b', 1, 'b37030712bec4031a71d8d1871375899', '6895033c16a94fe486348476baead3d7', '2185da44ac4c42fab98bc100e1e1079f', '', ...)
+
+    def execute(self, query, params=None):
+        if params is None:
+            return super().execute(query)
+        # Extract names if params is a mapping, i.e. "pyformat" style is used.
+        param_names = list(params) if isinstance(params, Mapping) else None
+        query = self.convert_query(query, param_names=param_names)
+&gt;       return super().execute(query, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       sqlite3.OperationalError: no such table: ord_order
+
+env\Lib\site-packages\django\db\backends\sqlite3\base.py:360: OperationalError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;ord.tests.OrderCheckoutTests testMethod=test_idempotency_returns_existing_order&gt;
+
+    def test_idempotency_returns_existing_order(self):
+        """Unhappy path: повторный запрос с тем же idempotency_key возвращает существующий заказ"""
+        # Создаём заказ вручную
+&gt;       existing_order = Order.objects.create(
+            user=self.user, idempotency_key=self.idempotency_key,
+            address_id=uuid.uuid4(), payment_method_id=uuid.uuid4(),
+            status='PAID', total_price=100000
+        )
+
+ord\tests.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:665: in create
+    obj.save(force_insert=True, using=self.db)
+env\Lib\site-packages\django\db\models\base.py:902: in save
+    self.save_base(
+env\Lib\site-packages\django\db\models\base.py:1008: in save_base
+    updated = self._save_table(
+env\Lib\site-packages\django\db\models\base.py:1169: in _save_table
+    results = self._do_insert(
+env\Lib\site-packages\django\db\models\base.py:1210: in _do_insert
+    return manager._insert(
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\sql\compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+env\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+env\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+env\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+env\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.backends.sqlite3.base.SQLiteCursorWrapper object at 0x000001B1307ABAD0&gt;
+query = 'INSERT INTO "ord_order" ("id", "user_id", "idempotency_key", "address_id", "payment_method_id", "comment", "status", "total_price", "created_at") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+params = ('4f080a3de4154deeb68711f0e8afc58b', 1, 'b37030712bec4031a71d8d1871375899', '6895033c16a94fe486348476baead3d7', '2185da44ac4c42fab98bc100e1e1079f', '', ...)
+
+    def execute(self, query, params=None):
+        if params is None:
+            return super().execute(query)
+        # Extract names if params is a mapping, i.e. "pyformat" style is used.
+        param_names = list(params) if isinstance(params, Mapping) else None
+        query = self.convert_query(query, param_names=param_names)
+&gt;       return super().execute(query, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       django.db.utils.OperationalError: no such table: ord_order
+
+env\Lib\site-packages\django\db\backends\sqlite3\base.py:360: OperationalError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_partial_reserve_failure_returns_409" file="ord\tests.py" line="40" time="0.413"><failure message="ModuleNotFoundError: No module named 'orders'">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_partial_reserve_failure_returns_409&gt;
+
+    def test_partial_reserve_failure_returns_409(self):
+        """Unhappy path: B2B возвращает 409 с failed_items"""
+        failed_items = [{'sku_id': '11111111-1111-1111-1111-111111111111', 'reason': 'OUT_OF_STOCK'}]
+&gt;       with patch('orders.services.B2BClient.reserve_inventory') as mock_reserve:
+
+ord\tests.py:44: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\mock.py:1427: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\pkgutil.py:700: in resolve_name
+    mod = importlib.import_module(modname)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1204: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1176: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'orders', import_ = &lt;function _gcd_import at 0x000001B12A0C3D80&gt;
+
+&gt;   ???
+E   ModuleNotFoundError: No module named 'orders'
+
+&lt;frozen importlib._bootstrap&gt;:1140: ModuleNotFoundError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

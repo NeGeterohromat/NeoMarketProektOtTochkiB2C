@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="2.311" timestamp="2026-06-05T21:45:11.994787+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_b2b_unavailable_returns_503" file="ord\tests.py" line="69" time="0.645"><failure message="ModuleNotFoundError: No module named 'orders'">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_b2b_unavailable_returns_503&gt;
+
+    def test_b2b_unavailable_returns_503(self):
+        """Unhappy path: B2B недоступен -&gt; 503"""
+        with patch('app.services.B2BClient.reserve_inventory', side_effect=Exception('ConnectionError')):
+            # Патчим на уровне _call_b2b для имитации NetworkError
+&gt;           with patch('orders.services.B2BClient._call_b2b', side_effect=Exception('Connection refused')):
+
+ord\tests.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\unittest\mock.py:1427: in __enter__
+    self.target = self.getter()
+                  ^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\pkgutil.py:700: in resolve_name
+    mod = importlib.import_module(modname)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+&lt;frozen importlib._bootstrap&gt;:1204: in _gcd_import
+    ???
+&lt;frozen importlib._bootstrap&gt;:1176: in _find_and_load
+    ???
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+name = 'orders', import_ = &lt;function _gcd_import at 0x00000285A01F3D80&gt;
+
+&gt;   ???
+E   ModuleNotFoundError: No module named 'orders'
+
+&lt;frozen importlib._bootstrap&gt;:1140: ModuleNotFoundError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_checkout_creates_paid_order_with_fixed_prices" file="ord\tests.py" line="25" time="0.470"><failure message="AssertionError: 404 != 201">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_checkout_creates_paid_order_with_fixed_prices&gt;
+
+    def test_checkout_creates_paid_order_with_fixed_prices(self):
+        """Happy path: успешный чекаут, статус PAID, цены зафиксированы"""
+        with patch('app.services.B2BClient.reserve_inventory') as mock_reserve:
+            mock_reserve.return_value = {'status': 'RESERVED', 'order_id': str(uuid.uuid4())}
+    
+            response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+    
+&gt;           self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+E           AssertionError: 404 != 201
+
+ord\tests.py:33: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_idempotency_returns_existing_order" file="ord\tests.py" line="53" time="0.421"><failure message="AssertionError: 404 != 201">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_idempotency_returns_existing_order&gt;
+
+    def test_idempotency_returns_existing_order(self):
+        """Unhappy path: повторный запрос с тем же idempotency_key возвращает существующий заказ"""
+        # Создаём заказ вручную
+        existing_order = Order.objects.create(
+            user=self.user, idempotency_key=self.idempotency_key,
+            address_id=uuid.uuid4(), payment_method_id=uuid.uuid4(),
+            status='PAID', total_price=100000
+        )
+    
+        response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+    
+&gt;       self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+E       AssertionError: 404 != 201
+
+ord\tests.py:65: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_partial_reserve_failure_returns_409" file="ord\tests.py" line="40" time="0.423"><failure message="AssertionError: 404 != 409">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_partial_reserve_failure_returns_409&gt;
+
+    def test_partial_reserve_failure_returns_409(self):
+        """Unhappy path: B2B возвращает 409 с failed_items"""
+        failed_items = [{'sku_id': '11111111-1111-1111-1111-111111111111', 'reason': 'OUT_OF_STOCK'}]
+        with patch('app.services.B2BClient.reserve_inventory') as mock_reserve:
+            mock_reserve.return_value = {'status': 'FAILED', 'failed_items': failed_items}
+    
+            response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+    
+&gt;           self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+E           AssertionError: 404 != 409
+
+ord\tests.py:49: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Not Found: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

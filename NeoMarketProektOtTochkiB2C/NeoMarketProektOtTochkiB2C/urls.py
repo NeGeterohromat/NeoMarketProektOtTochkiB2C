@@ -30,4 +30,5 @@ urlpatterns = [
 
     path('api/v1/catalog/',include('app.urls')),
     path('',include('cart.urls')),
+    path('',include('ord.urls')),
 ]

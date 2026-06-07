@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="4" time="2.504" timestamp="2026-06-07T15:51:13.763302+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_b2b_unavailable_returns_503" file="ord\tests.py" line="86" time="0.659"><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Service Unavailable: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_checkout_creates_paid_order_with_fixed_prices" file="ord\tests.py" line="29" time="0.450"><failure message="django.db.utils.OperationalError: table ord_orderitem has no column named product_id">self = &lt;django.db.backends.utils.CursorWrapper object at 0x000001AECA633150&gt;
+sql = 'INSERT INTO "ord_orderitem" ("id", "order_id", "sku_id", "product_id", "quantity", "unit_price", "line_total") VALUES (%s, %s, %s, %s, %s, %s, %s)'
+params = ('f7d632bf0a9d4ca893ce997d1fa65ab8', '43a3964a61aa4369b9fd3301a3ebd7fa', '4b0418dc2a9e405b8bf03f2236b6a322', 'f710b8661a6141b688bf67a46d7a7357', 2, 150000, ...)
+ignored_wrapper_args = (False, {'connection': &lt;DatabaseWrapper vendor='sqlite' alias='default'&gt;, 'cursor': &lt;django.db.backends.utils.CursorWrapper object at 0x000001AECA633150&gt;})
+
+    def _execute(self, sql, params, *ignored_wrapper_args):
+        # Raise a warning during app initialization (stored_app_configs is only
+        # ever set during testing).
+        if not apps.ready and not apps.stored_app_configs:
+            warnings.warn(self.APPS_NOT_READY_WARNING_MSG, category=RuntimeWarning)
+        self.db.validate_no_broken_transaction()
+        with self.db.wrap_database_errors:
+            if params is None:
+                # params default might be backend specific.
+                return self.cursor.execute(sql)
+            else:
+&gt;               return self.cursor.execute(sql, params)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+env\Lib\site-packages\django\db\backends\utils.py:105: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.backends.sqlite3.base.SQLiteCursorWrapper object at 0x000001AECA614200&gt;
+query = 'INSERT INTO "ord_orderitem" ("id", "order_id", "sku_id", "product_id", "quantity", "unit_price", "line_total") VALUES (?, ?, ?, ?, ?, ?, ?)'
+params = ('f7d632bf0a9d4ca893ce997d1fa65ab8', '43a3964a61aa4369b9fd3301a3ebd7fa', '4b0418dc2a9e405b8bf03f2236b6a322', 'f710b8661a6141b688bf67a46d7a7357', 2, 150000, ...)
+
+    def execute(self, query, params=None):
+        if params is None:
+            return super().execute(query)
+        # Extract names if params is a mapping, i.e. "pyformat" style is used.
+        param_names = list(params) if isinstance(params, Mapping) else None
+        query = self.convert_query(query, param_names=param_names)
+&gt;       return super().execute(query, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       sqlite3.OperationalError: table ord_orderitem has no column named product_id
+
+env\Lib\site-packages\django\db\backends\sqlite3\base.py:360: OperationalError
+
+The above exception was the direct cause of the following exception:
+
+self = &lt;ord.tests.OrderCheckoutTests testMethod=test_checkout_creates_paid_order_with_fixed_prices&gt;
+
+    def test_checkout_creates_paid_order_with_fixed_prices(self):
+        """Happy path: успешный чекаут, статус PAID, цены зафиксированы"""
+        with patch('app.services.B2BClient._call_b2b') as mock_reserve:
+            def get_response_with_id(**kwargs):
+                return {'status': 'RESERVED', 'order_id': str(kwargs['data']['order_id'])}
+            mock_reserve.side_effect = get_response_with_id
+    
+            cart_item = CartItem.objects.create(user=self.user,
+                                                product_id=uuid.uuid4(),
+                                                sku_id=self.valid_payload['items_snapshot'][0]['sku_id'],
+                                                quantity=self.valid_payload['items_snapshot'][0]['quantity'],
+                                                )
+    
+&gt;           response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ord\tests.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+env\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\views.py:31: in post
+    order = order_service.create_order(
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\contextlib.py:81: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+ord\services.py:77: in create_order
+    OrderItem.objects.create(
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:665: in create
+    obj.save(force_insert=True, using=self.db)
+env\Lib\site-packages\django\db\models\base.py:902: in save
+    self.save_base(
+env\Lib\site-packages\django\db\models\base.py:1008: in save_base
+    updated = self._save_table(
+env\Lib\site-packages\django\db\models\base.py:1169: in _save_table
+    results = self._do_insert(
+env\Lib\site-packages\django\db\models\base.py:1210: in _do_insert
+    return manager._insert(
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\sql\compiler.py:1882: in execute_sql
+    cursor.execute(sql, params)
+env\Lib\site-packages\django\db\backends\utils.py:79: in execute
+    return self._execute_with_wrappers(
+env\Lib\site-packages\django\db\backends\utils.py:92: in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\backends\utils.py:100: in _execute
+    with self.db.wrap_database_errors:
+env\Lib\site-packages\django\db\utils.py:91: in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+env\Lib\site-packages\django\db\backends\utils.py:105: in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.backends.sqlite3.base.SQLiteCursorWrapper object at 0x000001AECA614200&gt;
+query = 'INSERT INTO "ord_orderitem" ("id", "order_id", "sku_id", "product_id", "quantity", "unit_price", "line_total") VALUES (?, ?, ?, ?, ?, ?, ?)'
+params = ('f7d632bf0a9d4ca893ce997d1fa65ab8', '43a3964a61aa4369b9fd3301a3ebd7fa', '4b0418dc2a9e405b8bf03f2236b6a322', 'f710b8661a6141b688bf67a46d7a7357', 2, 150000, ...)
+
+    def execute(self, query, params=None):
+        if params is None:
+            return super().execute(query)
+        # Extract names if params is a mapping, i.e. "pyformat" style is used.
+        param_names = list(params) if isinstance(params, Mapping) else None
+        query = self.convert_query(query, param_names=param_names)
+&gt;       return super().execute(query, params)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       django.db.utils.OperationalError: table ord_orderitem has no column named product_id
+
+env\Lib\site-packages\django\db\backends\sqlite3\base.py:360: OperationalError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/orders/
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\backends\sqlite3\base.py", line 360, in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: table ord_orderitem has no column named product_id
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\views.py", line 31, in post
+    order = order_service.create_order(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\services.py", line 77, in create_order
+    OrderItem.objects.create(
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\query.py", line 665, in create
+    obj.save(force_insert=True, using=self.db)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\base.py", line 902, in save
+    self.save_base(
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\base.py", line 1008, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\base.py", line 1210, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\query.py", line 1873, in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\sql\compiler.py", line 1882, in execute_sql
+    cursor.execute(sql, params)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\backends\sqlite3\base.py", line 360, in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.OperationalError: table ord_orderitem has no column named product_id
+--------------------------------- Captured Out ---------------------------------
+111
+CartItem(id=7a2d75dd-b518-4533-8bb4-43cf2f92cc7b, sku=4b0418dc-2a9e-405b-8bf0-3f2236b6a322, qty=2)
+f710b866-1a61-41b6-88bf-67a46d7a7357
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_idempotency_returns_existing_order" file="ord\tests.py" line="70" time="0.424"><failure message="AssertionError: 400 != 201">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_idempotency_returns_existing_order&gt;
+
+    def test_idempotency_returns_existing_order(self):
+        """Unhappy path: повторный запрос с тем же idempotency_key возвращает существующий заказ"""
+        # Создаём заказ вручную
+        existing_order = Order.objects.create(
+            user=self.user, idempotency_key=self.idempotency_key,
+            address_id=uuid.uuid4(), payment_method_id=uuid.uuid4(),
+            status='PAID', total_price=100000
+        )
+    
+        response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+    
+&gt;       self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+E       AssertionError: 400 != 201
+
+ord\tests.py:82: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Bad Request: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_partial_reserve_failure_returns_409" file="ord\tests.py" line="57" time="0.415"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Conflict: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

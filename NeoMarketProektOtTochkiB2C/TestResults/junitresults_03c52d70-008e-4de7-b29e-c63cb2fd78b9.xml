@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="4" time="2.665" timestamp="2026-06-07T14:59:41.909515+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_b2b_unavailable_returns_503" file="ord\tests.py" line="79" time="0.668"><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Service Unavailable: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_checkout_creates_paid_order_with_fixed_prices" file="ord\tests.py" line="28" time="0.459"><failure message="django.core.exceptions.ValidationError: ['“” is not a valid UUID.']">self = &lt;django.db.models.fields.UUIDField: product_id&gt;, value = ''
+
+    def to_python(self, value):
+        if value is not None and not isinstance(value, uuid.UUID):
+            input_form = "int" if isinstance(value, int) else "hex"
+            try:
+&gt;               return uuid.UUID(**{input_form: value})
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+env\Lib\site-packages\django\db\models\fields\__init__.py:2766: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;[AttributeError("'UUID' object has no attribute 'int'") raised in repr()] UUID object at 0x1caf46163c0&gt;
+hex = '', bytes = None, bytes_le = None, fields = None, int = None
+version = None
+
+    def __init__(self, hex=None, bytes=None, bytes_le=None, fields=None,
+                       int=None, version=None,
+                       *, is_safe=SafeUUID.unknown):
+        r"""Create a UUID from either a string of 32 hexadecimal digits,
+        a string of 16 bytes as the 'bytes' argument, a string of 16 bytes
+        in little-endian order as the 'bytes_le' argument, a tuple of six
+        integers (32-bit time_low, 16-bit time_mid, 16-bit time_hi_version,
+        8-bit clock_seq_hi_variant, 8-bit clock_seq_low, 48-bit node) as
+        the 'fields' argument, or a single 128-bit integer as the 'int'
+        argument.  When a string of hex digits is given, curly braces,
+        hyphens, and a URN prefix are all optional.  For example, these
+        expressions all yield the same UUID:
+    
+        UUID('{12345678-1234-5678-1234-567812345678}')
+        UUID('12345678123456781234567812345678')
+        UUID('urn:uuid:12345678-1234-5678-1234-567812345678')
+        UUID(bytes='\x12\x34\x56\x78'*4)
+        UUID(bytes_le='\x78\x56\x34\x12\x34\x12\x78\x56' +
+                      '\x12\x34\x56\x78\x12\x34\x56\x78')
+        UUID(fields=(0x12345678, 0x1234, 0x5678, 0x12, 0x34, 0x567812345678))
+        UUID(int=0x12345678123456781234567812345678)
+    
+        Exactly one of 'hex', 'bytes', 'bytes_le', 'fields', or 'int' must
+        be given.  The 'version' argument is optional; if given, the resulting
+        UUID will have its variant and version set according to RFC 4122,
+        overriding the given 'hex', 'bytes', 'bytes_le', 'fields', or 'int'.
+    
+        is_safe is an enum exposed as an attribute on the instance.  It
+        indicates whether the UUID has been generated in a way that is safe
+        for multiprocessing applications, via uuid_generate_time_safe(3).
+        """
+    
+        if [hex, bytes, bytes_le, fields, int].count(None) != 4:
+            raise TypeError('one of the hex, bytes, bytes_le, fields, '
+                            'or int arguments must be given')
+        if hex is not None:
+            hex = hex.replace('urn:', '').replace('uuid:', '')
+            hex = hex.strip('{}').replace('-', '')
+            if len(hex) != 32:
+&gt;               raise ValueError('badly formed hexadecimal UUID string')
+E               ValueError: badly formed hexadecimal UUID string
+
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\uuid.py:178: ValueError
+
+During handling of the above exception, another exception occurred:
+
+self = &lt;ord.tests.OrderCheckoutTests testMethod=test_checkout_creates_paid_order_with_fixed_prices&gt;
+
+    def test_checkout_creates_paid_order_with_fixed_prices(self):
+        """Happy path: успешный чекаут, статус PAID, цены зафиксированы"""
+        with patch('app.services.B2BClient._call_b2b') as mock_reserve:
+            def get_response_with_id(**kwargs):
+                return {'status': 'RESERVED', 'order_id': str(kwargs['data']['order_id'])}
+            mock_reserve.side_effect = get_response_with_id
+    
+&gt;           response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ord\tests.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+env\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\views.py:31: in post
+    order = order_service.create_order(
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\contextlib.py:81: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+ord\services.py:71: in create_order
+    OrderItem.objects.create(
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:665: in create
+    obj.save(force_insert=True, using=self.db)
+env\Lib\site-packages\django\db\models\base.py:902: in save
+    self.save_base(
+env\Lib\site-packages\django\db\models\base.py:1008: in save_base
+    updated = self._save_table(
+env\Lib\site-packages\django\db\models\base.py:1169: in _save_table
+    results = self._do_insert(
+env\Lib\site-packages\django\db\models\base.py:1210: in _do_insert
+    return manager._insert(
+env\Lib\site-packages\django\db\models\manager.py:87: in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\query.py:1873: in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\sql\compiler.py:1881: in execute_sql
+    for sql, params in self.as_sql():
+                       ^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\sql\compiler.py:1804: in as_sql
+    value_rows = [
+env\Lib\site-packages\django\db\models\sql\compiler.py:1805: in &lt;listcomp&gt;
+    [
+env\Lib\site-packages\django\db\models\sql\compiler.py:1806: in &lt;listcomp&gt;
+    self.prepare_value(field, self.pre_save_val(field, obj))
+env\Lib\site-packages\django\db\models\sql\compiler.py:1741: in prepare_value
+    return field.get_db_prep_save(value, connection=self.connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\fields\__init__.py:1012: in get_db_prep_save
+    return self.get_db_prep_value(value, connection=connection, prepared=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\db\models\fields\__init__.py:2756: in get_db_prep_value
+    value = self.to_python(value)
+            ^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;django.db.models.fields.UUIDField: product_id&gt;, value = ''
+
+    def to_python(self, value):
+        if value is not None and not isinstance(value, uuid.UUID):
+            input_form = "int" if isinstance(value, int) else "hex"
+            try:
+                return uuid.UUID(**{input_form: value})
+            except (AttributeError, ValueError):
+&gt;               raise exceptions.ValidationError(
+                    self.error_messages["invalid"],
+                    code="invalid",
+                    params={"value": value},
+                )
+E               django.core.exceptions.ValidationError: ['“” is not a valid UUID.']
+
+env\Lib\site-packages\django\db\models\fields\__init__.py:2768: ValidationError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/orders/
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\fields\__init__.py", line 2766, in to_python
+    return uuid.UUID(**{input_form: value})
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\uuid.py", line 178, in __init__
+    raise ValueError('badly formed hexadecimal UUID string')
+ValueError: badly formed hexadecimal UUID string
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\views.py", line 31, in post
+    order = order_service.create_order(
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\services.py", line 71, in create_order
+    OrderItem.objects.create(
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\query.py", line 665, in create
+    obj.save(force_insert=True, using=self.db)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\base.py", line 902, in save
+    self.save_base(
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\base.py", line 1008, in save_base
+    updated = self._save_table(
+              ^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\base.py", line 1169, in _save_table
+    results = self._do_insert(
+              ^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\base.py", line 1210, in _do_insert
+    return manager._insert(
+           ^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\manager.py", line 87, in manager_method
+    return getattr(self.get_queryset(), name)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\query.py", line 1873, in _insert
+    return query.get_compiler(using=using).execute_sql(returning_fields)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\sql\compiler.py", line 1881, in execute_sql
+    for sql, params in self.as_sql():
+                       ^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\sql\compiler.py", line 1804, in as_sql
+    value_rows = [
+                 ^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\sql\compiler.py", line 1805, in &lt;listcomp&gt;
+    [
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\sql\compiler.py", line 1806, in &lt;listcomp&gt;
+    self.prepare_value(field, self.pre_save_val(field, obj))
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\sql\compiler.py", line 1741, in prepare_value
+    return field.get_db_prep_save(value, connection=self.connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\fields\__init__.py", line 1012, in get_db_prep_save
+    return self.get_db_prep_value(value, connection=connection, prepared=False)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\fields\__init__.py", line 2756, in get_db_prep_value
+    value = self.to_python(value)
+            ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\db\models\fields\__init__.py", line 2768, in to_python
+    raise exceptions.ValidationError(
+django.core.exceptions.ValidationError: ['“” is not a valid UUID.']
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_idempotency_returns_existing_order" file="ord\tests.py" line="63" time="0.428"><failure message="AssertionError: Cannot call `.is_valid()` as no `data=` keyword argument was passed when instantiating the serializer instance.">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_idempotency_returns_existing_order&gt;
+
+    def test_idempotency_returns_existing_order(self):
+        """Unhappy path: повторный запрос с тем же idempotency_key возвращает существующий заказ"""
+        # Создаём заказ вручную
+        existing_order = Order.objects.create(
+            user=self.user, idempotency_key=self.idempotency_key,
+            address_id=uuid.uuid4(), payment_method_id=uuid.uuid4(),
+            status='PAID', total_price=100000
+        )
+    
+&gt;       response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ord\tests.py:73: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+env\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\views.py:37: in post
+    order_ser.is_valid(raise_exception=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = OrderResponseSerializer(&lt;Order: Order 9afe9065-0dab-48d7-aafb-57f760311d22 (PAID)&gt;):
+    id = UUIDField(read_only=True...egerField(max_value=9223372036854775807, min_value=-9223372036854775808)
+    created_at = DateTimeField(read_only=True)
+
+    def is_valid(self, *, raise_exception=False):
+&gt;       assert hasattr(self, 'initial_data'), (
+            'Cannot call `.is_valid()` as no `data=` keyword argument was '
+            'passed when instantiating the serializer instance.'
+        )
+E       AssertionError: Cannot call `.is_valid()` as no `data=` keyword argument was passed when instantiating the serializer instance.
+
+env\Lib\site-packages\rest_framework\serializers.py:218: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/orders/
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\views.py", line 37, in post
+    order_ser.is_valid(raise_exception=True)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\serializers.py", line 218, in is_valid
+    assert hasattr(self, 'initial_data'), (
+AssertionError: Cannot call `.is_valid()` as no `data=` keyword argument was passed when instantiating the serializer instance.
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_partial_reserve_failure_returns_409" file="ord\tests.py" line="50" time="0.416"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Conflict: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

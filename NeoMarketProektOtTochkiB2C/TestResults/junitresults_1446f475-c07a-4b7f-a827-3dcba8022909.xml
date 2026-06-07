@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="1.041" timestamp="2026-06-07T16:37:32.716824+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_idempotency_returns_existing_order" file="ord\tests.py" line="74" time="0.676"><failure message="KeyError: '36e0be25-e118-4f72-9ebc-08fda323b8d4'">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_idempotency_returns_existing_order&gt;
+
+    def test_idempotency_returns_existing_order(self):
+        """Unhappy path: повторный запрос с тем же idempotency_key возвращает существующий заказ"""
+        # Создаём заказ вручную
+        existing_order = Order.objects.create(
+            user=self.user, idempotency_key=self.idempotency_key,
+            address_id=uuid.uuid4(), payment_method_id=uuid.uuid4(),
+            status='PAID', total_price=100000
+        )
+        with patch('app.services.B2BClient._call_b2b') as mock_batch:
+            mock_batch.return_value = [{'id': self.product_id,'skus':[{'id':self.valid_payload['items_snapshot'][0]['sku_id'],'name':'nnn'}]}]
+    
+&gt;           response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ord\tests.py:86: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+env\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\views.py:41: in post
+    return Response(order_service.transform_order_to_response(data), status=status.HTTP_201_CREATED)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\services.py:110: in transform_order_to_response
+    names = self.get_sku_names(product_sku_dict)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\services.py:95: in get_sku_names
+    skus = [s for s in b['skus'] if s['id'] in product_sku_dict[b['id']]]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = &lt;list_iterator object at 0x000001CA903ABEE0&gt;
+
+&gt;   skus = [s for s in b['skus'] if s['id'] in product_sku_dict[b['id']]]
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^
+E   KeyError: '36e0be25-e118-4f72-9ebc-08fda323b8d4'
+
+ord\services.py:95: KeyError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/orders/
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\views.py", line 41, in post
+    return Response(order_service.transform_order_to_response(data), status=status.HTTP_201_CREATED)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\services.py", line 110, in transform_order_to_response
+    names = self.get_sku_names(product_sku_dict)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\services.py", line 95, in get_sku_names
+    skus = [s for s in b['skus'] if s['id'] in product_sku_dict[b['id']]]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\services.py", line 95, in &lt;listcomp&gt;
+    skus = [s for s in b['skus'] if s['id'] in product_sku_dict[b['id']]]
+                                               ~~~~~~~~~~~~~~~~^^^^^^^^^
+KeyError: '36e0be25-e118-4f72-9ebc-08fda323b8d4'
+--------------------------------- Captured Out ---------------------------------
+Order 9a450f5a-1579-491f-b0d8-03bf2b15c794 (PAID)
+{'id': '9a450f5a-1579-491f-b0d8-03bf2b15c794', 'user': &lt;User: testuser&gt;, 'address_id': '7e837994-414a-44e4-8335-3a4ef7bcb6a4', 'payment_method_id': '60d83d26-54b4-4d41-813e-25fdebe0d8c1', 'comment': '', 'status': 'PAID', 'total_price': 100000, 'items': [], 'created_at': '2026-06-07T11:37:33.510822Z'}
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>
