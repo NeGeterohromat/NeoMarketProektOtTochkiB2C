@@ -1,4 +1,5 @@
 import uuid
+import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -32,9 +33,16 @@ class OrderCreateView(APIView):
                 idempotency_key=idempotency_key,
                 payload=serializer.validated_data
             )
-            resp = OrderResponseSerializer(order)
-            return Response(resp.data, status=status.HTTP_201_CREATED)
-            
+            order_ser = OrderResponseSerializer(order)
+            data= order_ser.data
+            data['user'] = request.user
+            print(order)
+            print(data)
+            return Response(order_service.transform_order_to_response(data), status=status.HTTP_201_CREATED)
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                return Response({'code': 'B2B_UNAVAILABLE', 'message': 'Сервис товаров временно недоступен, попробуйте позже'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            return Response({'code': 'B2B_UNAVAILABLE', 'message': 'Сервис товаров временно недоступен, попробуйте позже'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except CheckoutValidationError as e:
             return error_response('INVALID_QUANTITY','Количество должно быть не менее 1 для каждой позиции',status.HTTP_422_UNPROCESSABLE_ENTITY) 
         except ReserveFailedError as e:

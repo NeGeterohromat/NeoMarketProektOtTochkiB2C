@@ -5,8 +5,9 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from unittest.mock import patch, MagicMock
-from .models import Order
+from .models import Order, OrderItem
 from app.services import B2BClient
+from cart.models import CartItem
 import requests
 
 User = get_user_model()
@@ -17,6 +18,7 @@ class OrderCheckoutTests(APITestCase):
         self.client.force_authenticate(user=self.user)
         self.idempotency_key = str(uuid.uuid4())
         self.headers = {'HTTP_IDEMPOTENCY_KEY': self.idempotency_key}
+        self.product_id = str(uuid.uuid4())
         self.valid_payload = {
             'address_id': str(uuid.uuid4()),
             'payment_method_id': str(uuid.uuid4()),
@@ -28,14 +30,29 @@ class OrderCheckoutTests(APITestCase):
 
     def test_checkout_creates_paid_order_with_fixed_prices(self):
         """Happy path: успешный чекаут, статус PAID, цены зафиксированы"""
-        with patch('app.services.B2BClient.reserve_inventory') as mock_reserve:
-            mock_reserve.return_value = {'status': 'RESERVED', 'order_id': str(uuid.uuid4())}
+        with patch('app.services.B2BClient._call_b2b') as mock_reserve:
+            def get_response_with_id(**kwargs):
+                if 'batch' in kwargs['url']:
+                    return [{'id': self.product_id,'skus':[{'id':self.valid_payload['items_snapshot'][0]['sku_id'],'name':'nnn'}]}]
+                return {'status': 'RESERVED', 'order_id': str(kwargs['data']['order_id'])}
+
+            mock_reserve.side_effect = get_response_with_id
             
+            cart_item = CartItem.objects.create(user=self.user,
+                                                product_id=self.product_id,
+                                                sku_id=self.valid_payload['items_snapshot'][0]['sku_id'],
+                                                quantity=self.valid_payload['items_snapshot'][0]['quantity'],
+                                                )
+
             response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
             
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertIn('id',response.data)
+            self.assertIn('buyer_id',response.data)
             self.assertEqual(response.data['status'], 'PAID')
-            self.assertEqual(response.data['total_price'], 300000) # 150000 * 2
+            self.assertEqual(response.data['subtotal'], 300000) # 150000 * 2
+            self.assertEqual(response.data['total'], 300000)
+            self.assertEqual(response.data['address']['id'],self.valid_payload['address_id'])
             self.assertEqual(len(response.data['items']), 1)
             self.assertEqual(response.data['items'][0]['unit_price'], 150000)
             self.assertEqual(response.data['items'][0]['line_total'], 300000)
@@ -62,13 +79,23 @@ class OrderCheckoutTests(APITestCase):
             address_id=uuid.uuid4(), payment_method_id=uuid.uuid4(),
             status='PAID', total_price=100000
         )
+        item = OrderItem.objects.create(
+                order=existing_order,
+                sku_id=self.valid_payload['items_snapshot'][0]['sku_id'],
+                product_id=self.product_id, # Опционально из кэша/B2B
+                quantity=self.valid_payload['items_snapshot'][0]['quantity'],
+                unit_price=self.valid_payload['items_snapshot'][0]['unit_price'],
+                line_total=300000
+            )
+        with patch('app.services.B2BClient._call_b2b') as mock_batch:
+            mock_batch.return_value = [{'id': self.product_id,'skus':[{'id':self.valid_payload['items_snapshot'][0]['sku_id'],'name':'nnn'}]}]
+
+            response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
         
-        response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
-        
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['id'], str(existing_order.id))
-        # Убедимся, что новый заказ не создался
-        self.assertEqual(Order.objects.filter(idempotency_key=self.idempotency_key).count(), 1)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.data['id'], str(existing_order.id))
+            # Убедимся, что новый заказ не создался
+            self.assertEqual(Order.objects.filter(idempotency_key=self.idempotency_key).count(), 1)
 
     def test_b2b_unavailable_returns_503(self):
         """Unhappy path: B2B недоступен -> 503"""

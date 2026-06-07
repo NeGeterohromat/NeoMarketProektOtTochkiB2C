@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="4" time="2.463" timestamp="2026-06-07T16:10:39.282651+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_b2b_unavailable_returns_503" file="ord\tests.py" line="86" time="0.689"><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Service Unavailable: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_checkout_creates_paid_order_with_fixed_prices" file="ord\tests.py" line="29" time="0.426"><failure message="AssertionError: Cannot call `.is_valid()` as no `data=` keyword argument was passed when instantiating the serializer instance.">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_checkout_creates_paid_order_with_fixed_prices&gt;
+
+    def test_checkout_creates_paid_order_with_fixed_prices(self):
+        """Happy path: успешный чекаут, статус PAID, цены зафиксированы"""
+        with patch('app.services.B2BClient._call_b2b') as mock_reserve:
+            def get_response_with_id(**kwargs):
+                return {'status': 'RESERVED', 'order_id': str(kwargs['data']['order_id'])}
+            mock_reserve.side_effect = get_response_with_id
+    
+            cart_item = CartItem.objects.create(user=self.user,
+                                                product_id=uuid.uuid4(),
+                                                sku_id=self.valid_payload['items_snapshot'][0]['sku_id'],
+                                                quantity=self.valid_payload['items_snapshot'][0]['quantity'],
+                                                )
+    
+&gt;           response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ord\tests.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+env\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\views.py:37: in post
+    order_ser.is_valid(raise_exception=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = OrderResponseSerializer(&lt;Order: Order 16a517bf-ae9f-454f-9ffa-9f0ee0747a04 (PAID)&gt;):
+    id = UUIDField(read_only=True...egerField(max_value=9223372036854775807, min_value=-9223372036854775808)
+    created_at = DateTimeField(read_only=True)
+
+    def is_valid(self, *, raise_exception=False):
+&gt;       assert hasattr(self, 'initial_data'), (
+            'Cannot call `.is_valid()` as no `data=` keyword argument was '
+            'passed when instantiating the serializer instance.'
+        )
+E       AssertionError: Cannot call `.is_valid()` as no `data=` keyword argument was passed when instantiating the serializer instance.
+
+env\Lib\site-packages\rest_framework\serializers.py:218: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/orders/
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\views.py", line 37, in post
+    order_ser.is_valid(raise_exception=True)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\serializers.py", line 218, in is_valid
+    assert hasattr(self, 'initial_data'), (
+AssertionError: Cannot call `.is_valid()` as no `data=` keyword argument was passed when instantiating the serializer instance.
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_idempotency_returns_existing_order" file="ord\tests.py" line="70" time="0.425"><failure message="AssertionError: Cannot call `.is_valid()` as no `data=` keyword argument was passed when instantiating the serializer instance.">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_idempotency_returns_existing_order&gt;
+
+    def test_idempotency_returns_existing_order(self):
+        """Unhappy path: повторный запрос с тем же idempotency_key возвращает существующий заказ"""
+        # Создаём заказ вручную
+        existing_order = Order.objects.create(
+            user=self.user, idempotency_key=self.idempotency_key,
+            address_id=uuid.uuid4(), payment_method_id=uuid.uuid4(),
+            status='PAID', total_price=100000
+        )
+    
+&gt;       response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ord\tests.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+env\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\views.py:37: in post
+    order_ser.is_valid(raise_exception=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = OrderResponseSerializer(&lt;Order: Order 8b6b254e-572f-4f7c-bd1e-c59c67e67f01 (PAID)&gt;):
+    id = UUIDField(read_only=True...egerField(max_value=9223372036854775807, min_value=-9223372036854775808)
+    created_at = DateTimeField(read_only=True)
+
+    def is_valid(self, *, raise_exception=False):
+&gt;       assert hasattr(self, 'initial_data'), (
+            'Cannot call `.is_valid()` as no `data=` keyword argument was '
+            'passed when instantiating the serializer instance.'
+        )
+E       AssertionError: Cannot call `.is_valid()` as no `data=` keyword argument was passed when instantiating the serializer instance.
+
+env\Lib\site-packages\rest_framework\serializers.py:218: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/orders/
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\views.py", line 37, in post
+    order_ser.is_valid(raise_exception=True)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\serializers.py", line 218, in is_valid
+    assert hasattr(self, 'initial_data'), (
+AssertionError: Cannot call `.is_valid()` as no `data=` keyword argument was passed when instantiating the serializer instance.
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_partial_reserve_failure_returns_409" file="ord\tests.py" line="57" time="0.429"><system-out>--------------------------------- Captured Log ---------------------------------
+WARNING  django.request:log.py:253 Conflict: /api/v1/orders/
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

@@ -32,7 +32,7 @@ class OrderItem(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     sku_id = models.UUIDField()
-    product_name = models.CharField(max_length=255)
+    product_id = models.UUIDField()
     quantity = models.PositiveIntegerField()
     unit_price = models.IntegerField()  # в копейках (фиксируется на момент чекаута)
     line_total = models.IntegerField()  # unit_price * quantity

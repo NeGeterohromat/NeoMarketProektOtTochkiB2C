@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="1" time="0.852" timestamp="2026-06-07T16:43:54.736042+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_checkout_creates_paid_order_with_fixed_prices" file="ord\tests.py" line="30" time="0.671"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+Order e3036d4b-fd66-464d-b224-60e9431a3861 (PAID)
+{'id': 'e3036d4b-fd66-464d-b224-60e9431a3861', 'user': &lt;User: testuser&gt;, 'address_id': '873e88e6-3cec-42f3-a31f-1bafb26ed9a4', 'payment_method_id': '00a70fe9-514b-4fc1-a6fa-bb1e706fb2c6', 'comment': 'Test order', 'status': 'PAID', 'total_price': 300000, 'items': [{'id': '3d0bfed1-f495-488b-a26d-f32596bd1b99', 'sku_id': 'ba92df95-9c38-4c51-8949-b5710f73d110', 'product_id': '0ce75683-2fc3-4cb1-967e-169f358587b2', 'quantity': 2, 'unit_price': 150000, 'line_total': 300000}], 'created_at': '2026-06-07T11:43:55.574041Z'}
+{'id': 'e3036d4b-fd66-464d-b224-60e9431a3861', 'buyer_id': '1', 'status': 'PAID', 'items': [{'id': '3d0bfed1-f495-488b-a26d-f32596bd1b99', 'sku_id': 'ba92df95-9c38-4c51-8949-b5710f73d110', 'product_id': '0ce75683-2fc3-4cb1-967e-169f358587b2', 'quantity': 2, 'unit_price': 150000, 'line_total': 300000, 'name': 'nnn'}], 'subtotal': 300000, 'delivery_cost': 0, 'total': 300000, 'address': {'country': '', 'city': '', 'street': '', 'building': '', 'id': '873e88e6-3cec-42f3-a31f-1bafb26ed9a4', 'created_at': '2026-06-07T08:49:29.533Z'}, 'created_at': '2026-06-07T11:43:55.574041Z'}
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

@@ -199,12 +199,12 @@ class B2BClient:
           "available_quantity": b2b_sku['active_quantity'],
           "images": b2b_sku['images']
         }
-    def get_products_batch(self, product_ids: list[uuid.UUID]) -> list[dict]:
+    def get_products_batch(self, product_ids: list[str]) -> list[dict]:
         """Вызов GET/POST /api/v1/public/products/batch для валидации перед резервом"""
         url = f'{self.base_url}/api/v1/public/products/batch'
-        data = {'product_ids': [str(pid) for pid in product_ids]}
+        data = {'product_ids': [pid for pid in product_ids]}
         try:
-            return self._call_b2b(url, params={}, data=data, method='POST')
+            return self._call_b2b(url=url, params={}, data=data, method='POST')
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
                 raise ValueError('Product not found')
@@ -217,8 +217,5 @@ class B2BClient:
             'order_id': str(order_id),
             'items': [{'sku_id': str(i['sku_id']), 'quantity': i['quantity']} for i in items]
         }
-        try:
-            return self._call_b2b(url, params={}, data=data, method='POST')
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 404:
-                raise ValueError('Product not found')
+        return self._call_b2b(url=url, params={}, data=data, method='POST')
+        

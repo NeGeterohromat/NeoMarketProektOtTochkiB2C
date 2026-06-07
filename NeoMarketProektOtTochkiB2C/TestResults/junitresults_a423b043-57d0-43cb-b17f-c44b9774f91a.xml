@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.942" timestamp="2026-06-07T14:04:27.519438+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_checkout_creates_paid_order_with_fixed_prices" file="ord\tests.py" line="28" time="0.637"><failure message="AssertionError: 'buyer_id' not found in {'id': 'a509d099-444a-4b88-ad0a-7455de0caf71', 'user': 1, 'address_id': '0aa113b0-5b05-4211-80d1-71e1f1d2bb75', 'payment_method_id': '947b242a-fa0a-44ba-93c6-af8cb47127a8', 'comment': 'Test order', 'status': 'PAID', 'total_price': 300000, 'items': [{'id': '0d835286-70ef-41d4-b8c7-553b84d01976', 'sku_id': '79ab5f04-ad15-4179-8cce-8b27f46b9b1d', 'product_name': '', 'quantity': 2, 'unit_price': 150000, 'line_total': 300000}], 'created_at': '2026-06-07T09:04:28.315448Z'}">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_checkout_creates_paid_order_with_fixed_prices&gt;
+
+    def test_checkout_creates_paid_order_with_fixed_prices(self):
+        """Happy path: успешный чекаут, статус PAID, цены зафиксированы"""
+        with patch('app.services.B2BClient._call_b2b') as mock_reserve:
+            def get_response_with_id(**kwargs):
+                return {'status': 'RESERVED', 'order_id': str(kwargs['data']['order_id'])}
+            mock_reserve.side_effect = get_response_with_id
+    
+            response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+    
+            print(response.data)
+            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertIn('id',response.data)
+&gt;           self.assertIn('buyer_id',response.data)
+E           AssertionError: 'buyer_id' not found in {'id': 'a509d099-444a-4b88-ad0a-7455de0caf71', 'user': 1, 'address_id': '0aa113b0-5b05-4211-80d1-71e1f1d2bb75', 'payment_method_id': '947b242a-fa0a-44ba-93c6-af8cb47127a8', 'comment': 'Test order', 'status': 'PAID', 'total_price': 300000, 'items': [{'id': '0d835286-70ef-41d4-b8c7-553b84d01976', 'sku_id': '79ab5f04-ad15-4179-8cce-8b27f46b9b1d', 'product_name': '', 'quantity': 2, 'unit_price': 150000, 'line_total': 300000}], 'created_at': '2026-06-07T09:04:28.315448Z'}
+
+ord\tests.py:41: AssertionError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+{'id': 'a509d099-444a-4b88-ad0a-7455de0caf71', 'user': 1, 'address_id': '0aa113b0-5b05-4211-80d1-71e1f1d2bb75', 'payment_method_id': '947b242a-fa0a-44ba-93c6-af8cb47127a8', 'comment': 'Test order', 'status': 'PAID', 'total_price': 300000, 'items': [{'id': '0d835286-70ef-41d4-b8c7-553b84d01976', 'sku_id': '79ab5f04-ad15-4179-8cce-8b27f46b9b1d', 'product_name': '', 'quantity': 2, 'unit_price': 150000, 'line_total': 300000}], 'created_at': '2026-06-07T09:04:28.315448Z'}
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

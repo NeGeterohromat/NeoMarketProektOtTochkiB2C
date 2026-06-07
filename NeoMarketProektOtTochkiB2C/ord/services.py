@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 from .models import Order, OrderItem, OrderStatus
+from cart.models import CartItem
 from app.exceptions import B2BUnavailableError, ReserveFailedError, CheckoutValidationError
 
 class OrderService:
@@ -68,10 +69,12 @@ class OrderService:
         for item in items_snapshot:
             line_total = item['unit_price'] * item['quantity']
             total_price += line_total
+            cart_item = CartItem.objects.get(user=user, sku_id=item['sku_id'])
+            product_id = cart_item.product_id
             OrderItem.objects.create(
                 order=order,
                 sku_id=item['sku_id'],
-                product_name=item.get('product_name', ''), # Опционально из кэша/B2B
+                product_id=product_id, # Опционально из кэша/B2B
                 quantity=item['quantity'],
                 unit_price=item['unit_price'],
                 line_total=line_total
@@ -79,4 +82,51 @@ class OrderService:
             
         order.total_price = total_price
         order.save(update_fields=['total_price'])
+
+        # Сохранили в заказах -> удалили из корзины
+        cart_item.delete()        
+
         return order
+
+    def get_sku_names(self, product_sku_dict):
+        batch = self.b2b.get_products_batch([pid for pid in product_sku_dict])
+        res = {}
+        for b in batch:
+            skus = [s for s in b['skus'] if s['id'] in product_sku_dict[b['id']]]
+            for sku in skus:
+                res[str(sku['id'])] = sku['name']
+        return res
+
+
+    def transform_order_to_response(self, data):
+        items=data['items']
+        product_sku_list = [[d['product_id'],d['sku_id']] for d in items]
+        product_sku_dict={}
+        for par in product_sku_list:
+            if par[0] in product_sku_dict:
+                product_sku_dict[par[0]].add(par[1])
+            else:
+                product_sku_dict[par[0]] = [par[1]]
+        names = self.get_sku_names(product_sku_dict)
+        for i in items:
+            i['name']=names[str(i['sku_id'])]
+
+        address={
+            'country': '',
+            'city':'',
+            'street':'',
+            'building':'',
+            'id':data['address_id'],
+            'created_at':'2026-06-07T08:49:29.533Z'
+            }
+        return {
+            'id': data['id'],
+            'buyer_id': str(data['user'].id),
+            'status': data['status'],
+            'items': items,
+            'subtotal': data['total_price'],
+            'delivery_cost': 0,
+            'total': data['total_price'],
+            'address': address,
+            'created_at': data['created_at']
+            }
