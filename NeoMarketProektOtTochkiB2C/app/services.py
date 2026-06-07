@@ -218,8 +218,11 @@ class B2BClient:
             'items': [{'sku_id': str(i['sku_id']), 'quantity': i['quantity']} for i in items]
         }
         try:
-            return self._call_b2b(url=url, params={}, data=data, method='POST')
+            resp = self._call_b2b(url=url, params={}, data=data, method='POST')
+            return resp
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 409:
                 return e.response.json()
+            if e.response.status_code == 404:
+                raise e
         
