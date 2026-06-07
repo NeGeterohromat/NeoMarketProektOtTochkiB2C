@@ -61,8 +61,16 @@ class OrderCheckoutTests(APITestCase):
     def test_partial_reserve_failure_returns_409(self):
         """Unhappy path: B2B возвращает 409 с failed_items"""
         failed_items = [{'sku_id': '11111111-1111-1111-1111-111111111111', 'reason': 'OUT_OF_STOCK'}]
-        with patch('app.services.B2BClient.reserve_inventory') as mock_reserve:
-            mock_reserve.return_value = {'status': 'FAILED', 'failed_items': failed_items}
+        with patch('app.services.B2BClient._call_b2b_by_func') as mock_reserve:
+            real_response = requests.Response()
+            real_response.status_code = 409
+            real_response.reason = "VALIDATION_ERROR"
+            real_response.url = "https://api.example.com/data"
+            real_response._content = b'{"code": "VALIDATION_ERROR", "message": "Field title", "details": [{"sku_id": "11111111-1111-1111-1111-111111111111", "reason": "OUT_OF_STOCK"}]}'
+            real_response.encoding = 'utf-8'
+
+            # 2. Возвращаем его из мока. Методы .raise_for_status(), .json() и т.д. остаются реальными!
+            mock_reserve.return_value = real_response
             
             response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
             
@@ -92,7 +100,7 @@ class OrderCheckoutTests(APITestCase):
 
             response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
         
-            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data['id'], str(existing_order.id))
             # Убедимся, что новый заказ не создался
             self.assertEqual(Order.objects.filter(idempotency_key=self.idempotency_key).count(), 1)

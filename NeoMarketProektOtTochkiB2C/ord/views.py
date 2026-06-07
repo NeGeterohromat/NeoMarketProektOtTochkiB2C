@@ -28,7 +28,7 @@ class OrderCreateView(APIView):
         try:
             b2b_client = B2BClient()
             order_service = OrderService(b2b_client)
-            order = order_service.create_order(
+            (order, stat) = order_service.create_order(
                 user=request.user,
                 idempotency_key=idempotency_key,
                 payload=serializer.validated_data
@@ -36,9 +36,7 @@ class OrderCreateView(APIView):
             order_ser = OrderResponseSerializer(order)
             data= order_ser.data
             data['user'] = request.user
-            print(order)
-            print(data)
-            return Response(order_service.transform_order_to_response(data), status=status.HTTP_201_CREATED)
+            return Response(order_service.transform_order_to_response(data), status=stat)
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
                 return Response({'code': 'B2B_UNAVAILABLE', 'message': 'Сервис товаров временно недоступен, попробуйте позже'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)

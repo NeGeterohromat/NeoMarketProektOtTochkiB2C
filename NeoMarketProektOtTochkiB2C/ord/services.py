@@ -4,6 +4,7 @@ import uuid
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
+from rest_framework import status
 from .models import Order, OrderItem, OrderStatus
 from cart.models import CartItem
 from app.exceptions import B2BUnavailableError, ReserveFailedError, CheckoutValidationError
@@ -17,7 +18,7 @@ class OrderService:
         # 0. Idempotency check
         existing = Order.objects.filter(idempotency_key=idempotency_key).select_related('user').first()
         if existing:
-            return existing
+            return (existing,status.HTTP_200_OK)
 
         # 1. Валидация items
         items_snapshot = payload.get('items_snapshot', [])
@@ -52,8 +53,9 @@ class OrderService:
         reserve_payload = [{'sku_id': i['sku_id'], 'quantity': i['quantity']} for i in items_snapshot]
         reserve_response = self.b2b.reserve_inventory(idempotency_key, uuid.uuid4(), reserve_payload) # order_id генерируем временно, или передадим после создания
 
-        if reserve_response.get('status') != 'RESERVED':
-            raise ReserveFailedError(failed_items=reserve_response.get('failed_items', []))
+        # Отлов ответа с ошибочными sku
+        if reserve_response.get('status','') != 'RESERVED':
+            raise ReserveFailedError(failed_items=reserve_response.get('details', []))
 
         # 5. Создание заказа и фиксация цен
         order = Order.objects.create(
@@ -86,7 +88,7 @@ class OrderService:
         # Сохранили в заказах -> удалили из корзины
         cart_item.delete()        
 
-        return order
+        return (order,status.HTTP_201_CREATED)
 
     def get_sku_names(self, product_sku_dict):
         batch = self.b2b.get_products_batch([pid for pid in product_sku_dict])
