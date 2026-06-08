@@ -1,6 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from app.exceptions import error_response
 from .services import CartService
 from .serializers import CartItemAddSerializer, CartItemUpdateSerializer
 
@@ -10,7 +11,7 @@ class CartAPIView(APIView):
             cart = CartService.get_cart(request)
             return Response(cart, status=status.HTTP_200_OK)
         except ValueError as e:
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return error_response('INVALID_REQUEST',str(e),status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request):
         CartService.clear_cart(request)
@@ -32,8 +33,8 @@ class CartItemAPIView(APIView):
             return Response(cart, status=status_code)
         except ValueError as e:
             if "Insufficient stock" in str(e) or "exceeds" in str(e):
-                return Response({'detail': str(e)}, status=status.HTTP_409_CONFLICT)
-            return Response({'detail': str(e)}, status=status.HTTP_404_NOT_FOUND)
+                return error_response('INVALID_REQUEST',str(e),status=status.HTTP_409_CONFLICT)
+            return error_response('INVALID_REQUEST',str(e),status=status.HTTP_404_NOT_FOUND)
 
     def patch(self, request, sku_id: str):
         serializer = CartItemUpdateSerializer(data=request.data)
@@ -45,8 +46,8 @@ class CartItemAPIView(APIView):
             return Response(cart, status=status.HTTP_200_OK)
         except ValueError as e:
             if "Insufficient stock" in str(e):
-                return Response({'detail': str(e)}, status=status.HTTP_409_CONFLICT)
-            return Response({'detail': str(e)}, status=status.HTTP_404_NOT_FOUND)
+                return error_response('INVALID_REQUEST',str(e),status=status.HTTP_409_CONFLICT)
+            return error_response('INVALID_REQUEST',str(e),status=status.HTTP_404_NOT_FOUND)
 
     def delete(self, request, sku_id: str):
         CartService.delete_item(request, sku_id)
@@ -61,11 +62,11 @@ class CartValidateAPIView(APIView):
 class CartMergeAPIView(APIView):
     def post(self, request):
         if not request.user.is_authenticated:
-            return Response({'detail': 'Unauthorized'}, status=status.HTTP_401_UNAUTHORIZED)
+            return error_response('UNAUTHORIZED','Unauthorized user',status=status.HTTP_401_UNAUTHORIZED)
             
         session_id = request.headers.get('X-Session-Id')
         if not session_id:
-            return Response({'detail': 'X-Session-Id header required for merge'}, status=status.HTTP_400_BAD_REQUEST)
+            return error_response('INVALID_REQUEST','X-Session-Id header required for merge',status=status.HTTP_400_BAD_REQUEST)
             
         CartService.merge_cart(session_id, request.user)
         cart = CartService.get_cart(request)

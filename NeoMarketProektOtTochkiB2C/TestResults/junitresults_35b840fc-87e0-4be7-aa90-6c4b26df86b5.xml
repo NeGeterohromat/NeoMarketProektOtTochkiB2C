@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="0" skipped="0" tests="4" time="2.664" timestamp="2026-06-08T19:03:32.867450+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="cart.tests.CartAPITests" name="test_add_sku_increments_quantity_if_already_in_cart" file="cart\tests.py" line="44" time="1.210"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_get_cart_enriched_with_b2b_data" file="cart\tests.py" line="64" time="0.425"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_guest_cart_merged_on_login" file="cart\tests.py" line="115" time="0.431"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="cart.tests.CartAPITests" name="test_unavailable_sku_shown_with_reason" file="cart\tests.py" line="89" time="0.416"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>
