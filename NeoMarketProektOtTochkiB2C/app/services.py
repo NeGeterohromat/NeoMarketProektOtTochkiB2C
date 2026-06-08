@@ -132,8 +132,11 @@ class B2BClient:
         if len(data['product_ids'])>0:
             products_data = self._call_b2b(url=url,params=params,data=data,method='POST')
             has_stock_dict = dict([[dat['id'],sum([sku['active_quantity'] for sku in dat['skus']])>0] for dat in products_data])
+        else:
+            has_stock_dict = {}
         #has_stock
 
+        # has_stock_dict пустой, только если b2b_data.get('items', []) пустой. А тогда и _transform_product_card вызовется 0 раз.
         return {
             'items': [self._transform_product_card(item,has_stock_dict[item['id']]) for item in b2b_data.get('items', [])],
             'total_count': b2b_data.get('total_count', 0),
@@ -158,12 +161,11 @@ class B2BClient:
         }
 
     def get_product_detail(self, id: uuid.UUID):
-        data = {'product_ids': [id]}
         url = f'{self.base_url}/api/v1/public/products/{id}'
         params = {}
 
         try:
-            b2b_answer = self._call_b2b(url=url,params=params,data=data,method='GET')
+            b2b_answer = self._call_b2b(url=url,params=params,method='GET')
             if b2b_answer['status']=='BLOCKED' or b2b_answer['status']=='HARD_BLOCKED':
                 raise BlockedProductError('Товар недоступен')
             return self._transform_product_from_uuid_get(b2b_answer)
