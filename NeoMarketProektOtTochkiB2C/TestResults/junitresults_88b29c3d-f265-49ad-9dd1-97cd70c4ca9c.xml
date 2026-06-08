@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="4" time="2.503" timestamp="2026-06-08T20:26:01.393030+05:00" hostname="WIN-T9HMN0FRTB7"><testcase classname="ord.tests.OrderCheckoutTests" name="test_b2b_unavailable_returns_503" file="ord\tests.py" line="107" time="0.677"><failure message="UnboundLocalError: cannot access local variable 'product_id' where it is not associated with a value">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_b2b_unavailable_returns_503&gt;
+
+    def test_b2b_unavailable_returns_503(self):
+        """Unhappy path: B2B недоступен -&gt; 503"""
+        with patch.object(B2BClient, '_call_b2b_by_func') as mock_b2b:
+            # B2BClient должен выбрасывать ValueError для 404
+            real_response = requests.Response()
+            real_response.status_code = 404
+            real_response.reason = "Internal Server Error"
+            real_response.url = "https://api.example.com/data"
+            real_response._content = b'{"detail": "server crashed"}'
+            real_response.encoding = 'utf-8'
+    
+            mock_b2b.return_value = real_response
+    
+&gt;           response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ord\tests.py:121: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+env\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\views.py:31: in post
+    (order, stat) = order_service.create_order(
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\contextlib.py:81: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;ord.services.OrderService object at 0x000001DAE4BEB450&gt;
+user = &lt;User: testuser&gt;
+idempotency_key = UUID('b149b358-387f-4274-a25e-0fe6bf1d24c5')
+payload = {'address_id': UUID('3b264b4b-af5d-4d66-a5af-b15c125581b3'), 'comment': 'Test order', 'items_snapshot': [{'quantity': ...a9-49cf-ae03-b0a56fd45589'), 'unit_price': 150000}], 'payment_method_id': UUID('156ae000-cb68-49c5-8013-0b8a9fbac4d5')}
+
+    @transaction.atomic
+    def create_order(self, user, idempotency_key: uuid.UUID, payload: dict) -&gt; Order:
+        # 0. Idempotency check
+        existing = Order.objects.filter(idempotency_key=idempotency_key).select_related('user').first()
+        if existing:
+            return (existing,status.HTTP_200_OK)
+    
+        # 1. Валидация items
+        items_snapshot = payload.get('items_snapshot', [])
+        if not items_snapshot:
+            raise CheckoutValidationError('Список товаров не может быть пустым')
+    
+        for item in items_snapshot:
+            if item.get('quantity', 0) &lt; 1:
+                raise CheckoutValidationError('Количество должно быть не менее 1 для каждой позиции')
+    
+        # 2. Получаем данные товаров из B2B для валидации (MODERATED, not deleted, stock)
+        # Группируем sku_id -&gt; product_id (в реальном проекте делается маппинг или отдельный эндпоинт sku/batch)
+        # Для соответствия flow: вызываем batch, проверяем SKU внутри продуктов
+        # Упрощённая логика валидации, соответствующая flow step 3
+        product_ids = list(set([uuid.UUID(i.get('product_id', '00000000-0000-0000-0000-000000000000')) for i in items_snapshot]))
+        # В реальности sku_id мапится на product_id. Здесь предполагаем, что payload содержит product_id или мы делаем отдельный вызов.
+        # Для строгого соответствия flow: B2C сам проверяет перед вызовом reserve.
+        # Пропустим сложную маппинг-логику, сосредоточимся на reserve и ценах.
+    
+        failed_items = []
+        # Имитация проверки stock/moderated (в тестах будет замокана)
+        sku_to_validate = [i['sku_id'] for i in items_snapshot]
+        try:
+            # Предполагаем, что B2BClient может валидировать или мы передаём проверку в reserve
+            # В flow step 3 проверка делается на стороне B2C.
+            # Для чистоты кода оставим проверку в reserve, так как B2B уже возвращает 409 с failed_items
+            pass
+        except Exception:
+            pass
+    
+        # 4. Вызов резерва в B2B
+        reserve_payload = [{'sku_id': i['sku_id'], 'quantity': i['quantity']} for i in items_snapshot]
+        order_id = uuid.uuid4()
+&gt;       while Order.objects.filter(id=product_id).count() != 0:
+                                      ^^^^^^^^^^
+E       UnboundLocalError: cannot access local variable 'product_id' where it is not associated with a value
+
+ord\services.py:55: UnboundLocalError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/orders/
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\views.py", line 31, in post
+    (order, stat) = order_service.create_order(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\services.py", line 55, in create_order
+    while Order.objects.filter(id=product_id).count() != 0:
+                                  ^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'product_id' where it is not associated with a value
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_checkout_creates_paid_order_with_fixed_prices" file="ord\tests.py" line="30" time="0.422"><failure message="UnboundLocalError: cannot access local variable 'product_id' where it is not associated with a value">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_checkout_creates_paid_order_with_fixed_prices&gt;
+
+    def test_checkout_creates_paid_order_with_fixed_prices(self):
+        """Happy path: успешный чекаут, статус PAID, цены зафиксированы"""
+        with patch('app.services.B2BClient._call_b2b') as mock_reserve:
+            def get_response_with_id(**kwargs):
+                if 'batch' in kwargs['url']:
+                    return [{'id': self.product_id,'skus':[{'id':self.valid_payload['items_snapshot'][0]['sku_id'],'name':'nnn'}]}]
+                return {'status': 'RESERVED', 'order_id': str(kwargs['data']['order_id'])}
+    
+            mock_reserve.side_effect = get_response_with_id
+    
+            cart_item = CartItem.objects.create(user=self.user,
+                                                product_id=self.product_id,
+                                                sku_id=self.valid_payload['items_snapshot'][0]['sku_id'],
+                                                quantity=self.valid_payload['items_snapshot'][0]['quantity'],
+                                                )
+    
+&gt;           response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ord\tests.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+env\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\views.py:31: in post
+    (order, stat) = order_service.create_order(
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\contextlib.py:81: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;ord.services.OrderService object at 0x000001DAE5112BD0&gt;
+user = &lt;User: testuser&gt;
+idempotency_key = UUID('607d221b-a7a0-4f1c-8328-5e0ceb5ddbe6')
+payload = {'address_id': UUID('219173ed-4d1f-4570-94bf-a4f811a9ba97'), 'comment': 'Test order', 'items_snapshot': [{'quantity': ...ee-4f24-8fea-af97e5a9716c'), 'unit_price': 150000}], 'payment_method_id': UUID('d628ecd8-d5bb-4afd-b77b-12bddcb6fc00')}
+
+    @transaction.atomic
+    def create_order(self, user, idempotency_key: uuid.UUID, payload: dict) -&gt; Order:
+        # 0. Idempotency check
+        existing = Order.objects.filter(idempotency_key=idempotency_key).select_related('user').first()
+        if existing:
+            return (existing,status.HTTP_200_OK)
+    
+        # 1. Валидация items
+        items_snapshot = payload.get('items_snapshot', [])
+        if not items_snapshot:
+            raise CheckoutValidationError('Список товаров не может быть пустым')
+    
+        for item in items_snapshot:
+            if item.get('quantity', 0) &lt; 1:
+                raise CheckoutValidationError('Количество должно быть не менее 1 для каждой позиции')
+    
+        # 2. Получаем данные товаров из B2B для валидации (MODERATED, not deleted, stock)
+        # Группируем sku_id -&gt; product_id (в реальном проекте делается маппинг или отдельный эндпоинт sku/batch)
+        # Для соответствия flow: вызываем batch, проверяем SKU внутри продуктов
+        # Упрощённая логика валидации, соответствующая flow step 3
+        product_ids = list(set([uuid.UUID(i.get('product_id', '00000000-0000-0000-0000-000000000000')) for i in items_snapshot]))
+        # В реальности sku_id мапится на product_id. Здесь предполагаем, что payload содержит product_id или мы делаем отдельный вызов.
+        # Для строгого соответствия flow: B2C сам проверяет перед вызовом reserve.
+        # Пропустим сложную маппинг-логику, сосредоточимся на reserve и ценах.
+    
+        failed_items = []
+        # Имитация проверки stock/moderated (в тестах будет замокана)
+        sku_to_validate = [i['sku_id'] for i in items_snapshot]
+        try:
+            # Предполагаем, что B2BClient может валидировать или мы передаём проверку в reserve
+            # В flow step 3 проверка делается на стороне B2C.
+            # Для чистоты кода оставим проверку в reserve, так как B2B уже возвращает 409 с failed_items
+            pass
+        except Exception:
+            pass
+    
+        # 4. Вызов резерва в B2B
+        reserve_payload = [{'sku_id': i['sku_id'], 'quantity': i['quantity']} for i in items_snapshot]
+        order_id = uuid.uuid4()
+&gt;       while Order.objects.filter(id=product_id).count() != 0:
+                                      ^^^^^^^^^^
+E       UnboundLocalError: cannot access local variable 'product_id' where it is not associated with a value
+
+ord\services.py:55: UnboundLocalError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/orders/
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\views.py", line 31, in post
+    (order, stat) = order_service.create_order(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\services.py", line 55, in create_order
+    while Order.objects.filter(id=product_id).count() != 0:
+                                  ^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'product_id' where it is not associated with a value
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_idempotency_returns_existing_order" file="ord\tests.py" line="81" time="0.422"><system-out>--------------------------------- Captured Log ---------------------------------
+
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase><testcase classname="ord.tests.OrderCheckoutTests" name="test_partial_reserve_failure_returns_409" file="ord\tests.py" line="60" time="0.444"><failure message="UnboundLocalError: cannot access local variable 'product_id' where it is not associated with a value">self = &lt;ord.tests.OrderCheckoutTests testMethod=test_partial_reserve_failure_returns_409&gt;
+
+    def test_partial_reserve_failure_returns_409(self):
+        """Unhappy path: B2B возвращает 409 с failed_items"""
+        failed_items = [{'sku_id': '11111111-1111-1111-1111-111111111111', 'reason': 'OUT_OF_STOCK'}]
+        with patch('app.services.B2BClient._call_b2b_by_func') as mock_reserve:
+            real_response = requests.Response()
+            real_response.status_code = 409
+            real_response.reason = "VALIDATION_ERROR"
+            real_response.url = "https://api.example.com/data"
+            real_response._content = b'{"code": "VALIDATION_ERROR", "message": "Field title", "details": [{"sku_id": "11111111-1111-1111-1111-111111111111", "reason": "OUT_OF_STOCK"}]}'
+            real_response.encoding = 'utf-8'
+    
+            # 2. Возвращаем его из мока. Методы .raise_for_status(), .json() и т.д. остаются реальными!
+            mock_reserve.return_value = real_response
+    
+&gt;           response = self.client.post('/api/v1/orders/', self.valid_payload, format='json', **self.headers)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ord\tests.py:75: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+env\Lib\site-packages\rest_framework\test.py:283: in post
+    response = super().post(
+env\Lib\site-packages\rest_framework\test.py:197: in post
+    return self.generic('POST', path, data, content_type, **extra)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:221: in generic
+    return super().generic(
+env\Lib\site-packages\django\test\client.py:671: in generic
+    return self.request(**r)
+           ^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:273: in request
+    return super().request(**kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\test.py:225: in request
+    request = super().request(**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\test\client.py:1090: in request
+    self.check_exception(response)
+env\Lib\site-packages\django\test\client.py:805: in check_exception
+    raise exc_value
+env\Lib\site-packages\django\core\handlers\exception.py:55: in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\core\handlers\base.py:197: in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\decorators\csrf.py:65: in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\django\views\generic\base.py:105: in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:515: in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+env\Lib\site-packages\rest_framework\views.py:475: in handle_exception
+    self.raise_uncaught_exception(exc)
+env\Lib\site-packages\rest_framework\views.py:486: in raise_uncaught_exception
+    raise exc
+env\Lib\site-packages\rest_framework\views.py:512: in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ord\views.py:31: in post
+    (order, stat) = order_service.create_order(
+..\..\..\..\AppData\Local\Programs\Python\Python311\Lib\contextlib.py:81: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;ord.services.OrderService object at 0x000001DAE4D39210&gt;
+user = &lt;User: testuser&gt;
+idempotency_key = UUID('3ee29044-04fe-43df-872b-319fd235a85c')
+payload = {'address_id': UUID('310eedd7-2886-4922-aecb-270c2e246836'), 'comment': 'Test order', 'items_snapshot': [{'quantity': ...2f-4a4d-a186-c057e8239e5b'), 'unit_price': 150000}], 'payment_method_id': UUID('51bea7c7-3ee9-4f87-9550-fea14e898159')}
+
+    @transaction.atomic
+    def create_order(self, user, idempotency_key: uuid.UUID, payload: dict) -&gt; Order:
+        # 0. Idempotency check
+        existing = Order.objects.filter(idempotency_key=idempotency_key).select_related('user').first()
+        if existing:
+            return (existing,status.HTTP_200_OK)
+    
+        # 1. Валидация items
+        items_snapshot = payload.get('items_snapshot', [])
+        if not items_snapshot:
+            raise CheckoutValidationError('Список товаров не может быть пустым')
+    
+        for item in items_snapshot:
+            if item.get('quantity', 0) &lt; 1:
+                raise CheckoutValidationError('Количество должно быть не менее 1 для каждой позиции')
+    
+        # 2. Получаем данные товаров из B2B для валидации (MODERATED, not deleted, stock)
+        # Группируем sku_id -&gt; product_id (в реальном проекте делается маппинг или отдельный эндпоинт sku/batch)
+        # Для соответствия flow: вызываем batch, проверяем SKU внутри продуктов
+        # Упрощённая логика валидации, соответствующая flow step 3
+        product_ids = list(set([uuid.UUID(i.get('product_id', '00000000-0000-0000-0000-000000000000')) for i in items_snapshot]))
+        # В реальности sku_id мапится на product_id. Здесь предполагаем, что payload содержит product_id или мы делаем отдельный вызов.
+        # Для строгого соответствия flow: B2C сам проверяет перед вызовом reserve.
+        # Пропустим сложную маппинг-логику, сосредоточимся на reserve и ценах.
+    
+        failed_items = []
+        # Имитация проверки stock/moderated (в тестах будет замокана)
+        sku_to_validate = [i['sku_id'] for i in items_snapshot]
+        try:
+            # Предполагаем, что B2BClient может валидировать или мы передаём проверку в reserve
+            # В flow step 3 проверка делается на стороне B2C.
+            # Для чистоты кода оставим проверку в reserve, так как B2B уже возвращает 409 с failed_items
+            pass
+        except Exception:
+            pass
+    
+        # 4. Вызов резерва в B2B
+        reserve_payload = [{'sku_id': i['sku_id'], 'quantity': i['quantity']} for i in items_snapshot]
+        order_id = uuid.uuid4()
+&gt;       while Order.objects.filter(id=product_id).count() != 0:
+                                      ^^^^^^^^^^
+E       UnboundLocalError: cannot access local variable 'product_id' where it is not associated with a value
+
+ord\services.py:55: UnboundLocalError</failure><system-out>--------------------------------- Captured Log ---------------------------------
+ERROR    django.request:log.py:253 Internal Server Error: /api/v1/orders/
+Traceback (most recent call last):
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\decorators\csrf.py", line 65, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 515, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 475, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 486, in raise_uncaught_exception
+    raise exc
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\env\Lib\site-packages\rest_framework\views.py", line 512, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\views.py", line 31, in post
+    (order, stat) = order_service.create_order(
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\Documents\GitHub\NeoMarketProektOtTochkiB2C\NeoMarketProektOtTochkiB2C\ord\services.py", line 55, in create_order
+    while Order.objects.filter(id=product_id).count() != 0:
+                                  ^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'product_id' where it is not associated with a value
+--------------------------------- Captured Out ---------------------------------
+
+</system-out><system-err>--------------------------------- Captured Err ---------------------------------
+
+</system-err></testcase></testsuite></testsuites>

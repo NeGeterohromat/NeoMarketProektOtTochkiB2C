@@ -51,7 +51,10 @@ class OrderService:
 
         # 4. Вызов резерва в B2B
         reserve_payload = [{'sku_id': i['sku_id'], 'quantity': i['quantity']} for i in items_snapshot]
-        reserve_response = self.b2b.reserve_inventory(idempotency_key, uuid.uuid4(), reserve_payload) # order_id генерируем временно, или передадим после создания
+        order_id = uuid.uuid4()
+        while Order.objects.filter(id=order_id).count() != 0:
+            order_id = uuid.uuid4()
+        reserve_response = self.b2b.reserve_inventory(idempotency_key, order_id, reserve_payload) # order_id генерируем временно, или передадим после создания
 
         # Отлов ответа с ошибочными sku
         if reserve_response.get('status','') != 'RESERVED':
@@ -59,6 +62,7 @@ class OrderService:
 
         # 5. Создание заказа и фиксация цен
         order = Order.objects.create(
+            id=order_id,
             user=user,
             idempotency_key=idempotency_key,
             address_id=payload['address_id'],
@@ -81,12 +85,11 @@ class OrderService:
                 unit_price=item['unit_price'],
                 line_total=line_total
             )
+            # Сохранили в заказах -> удалили из корзины
+            cart_item.delete()  
             
         order.total_price = total_price
-        order.save(update_fields=['total_price'])
-
-        # Сохранили в заказах -> удалили из корзины
-        cart_item.delete()        
+        order.save(update_fields=['total_price'])      
 
         return (order,status.HTTP_201_CREATED)
 
@@ -111,7 +114,7 @@ class OrderService:
                 product_sku_dict[par[0]] = [par[1]]
         names = self.get_sku_names(product_sku_dict)
         for i in items:
-            i['name']=names[str(i['sku_id'])]
+            i['name']=names.get(str(i['sku_id']), '')
 
         address={
             'country': '',
