@@ -163,7 +163,7 @@ class B2BClient:
         params = {}
 
         try:
-            b2b_answer = self._call_b2b(url=url,params=params,data=data,method='POST')
+            b2b_answer = self._call_b2b(url=url,params=params,data=data,method='GET')
             if b2b_answer['status']=='BLOCKED' or b2b_answer['status']=='HARD_BLOCKED':
                 raise BlockedProductError('Товар недоступен')
             return self._transform_product_from_uuid_get(b2b_answer)
