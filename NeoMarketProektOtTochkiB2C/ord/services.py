@@ -7,7 +7,7 @@ from django.db import transaction
 from rest_framework import status
 from .models import Order, OrderItem, OrderStatus
 from cart.models import CartItem
-from app.exceptions import B2BUnavailableError, ReserveFailedError, CheckoutValidationError
+from app.exceptions import B2BUnavailableError, ReserveFailedError, CheckoutValidationError, OrderNotFoundError, CancelNotAllowedError
 
 class OrderService:
     def __init__(self, b2b_client: B2BClient = None):
@@ -97,7 +97,7 @@ class OrderService:
         batch = self.b2b.get_products_batch([pid for pid in product_sku_dict])
         res = {}
         for b in batch:
-            skus = [s for s in b['skus'] if s['id'] in product_sku_dict[b['id']]]
+            skus = [s for s in b['skus'] if str(s['id']) in product_sku_dict[str(b['id'])]]
             for sku in skus:
                 res[str(sku['id'])] = sku['name']
         return res
@@ -135,3 +135,38 @@ class OrderService:
             'address': address,
             'created_at': data['created_at']
             }
+
+    @transaction.atomic
+    def cancel_order(self, user, order_id: uuid.UUID, reason: str = None) -> Order:
+        # 1. Проверка существования и IDOR (возвращаем 404, если не наш)
+        try:
+            order = Order.objects.select_related('user').prefetch_related('items').get(id=order_id)
+        except Order.DoesNotExist:
+            raise OrderNotFoundError()
+
+        if order.user != user:
+            raise OrderNotFoundError()
+
+        # 2. Проверка статуса
+        if order.status not in [OrderStatus.CREATED, OrderStatus.PAID]:
+            raise CancelNotAllowedError(current_status=order.status)
+
+        # 3. Формирование payload для B2B
+        items_payload = [
+            {'sku_id': str(item.sku_id), 'quantity': item.quantity} 
+            for item in order.items.all()
+        ]
+
+        # 4. Вызов unreserve в B2B
+        try:
+            self.b2b.unreserve_inventory(order_id=str(order.id), items=items_payload)
+            order.status = OrderStatus.CANCELLED
+        except B2BUnavailableError:
+            # При падении B2B переводим в CANCEL_PENDING для асинхронного ретрая
+            order.status = OrderStatus.CANCEL_PENDING
+
+        order.save(update_fields=['status'])
+        # Примечание: запись в status_history реализуется через сигнал или отдельную модель, 
+        # здесь мы возвращаем обновленный объект, а сериализатор сформирует историю.
+        
+        return order
