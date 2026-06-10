@@ -136,3 +136,8 @@ CACHES = {
     }
 }
 FACETS_CACHE_TTL = int(env('FACETS_CACHE_TTL'))  # 5 минут
+
+CELERY_BROKER_URL = env('CELERY_REDIS_URL') # Или rabbitmq://...
+CELERY_RESULT_BACKEND = env('CELERY_REDIS_URL')
+CELERY_TASK_ACKS_LATE = True # Гарантирует, что задача не будет потеряна при краше воркера
+CELERY_TASK_REJECT_ON_WORKER_LOST = True

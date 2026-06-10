@@ -1,4 +1,5 @@
 from app.services import B2BClient
+from .tasks import retry_unreserve_order
 import requests
 import uuid
 from django.conf import settings
@@ -164,9 +165,8 @@ class OrderService:
         except B2BUnavailableError:
             # При падении B2B переводим в CANCEL_PENDING для асинхронного ретрая
             order.status = OrderStatus.CANCEL_PENDING
+            retry_unreserve_order.delay(str(order.id))
 
         order.save(update_fields=['status'])
-        # Примечание: запись в status_history реализуется через сигнал или отдельную модель, 
-        # здесь мы возвращаем обновленный объект, а сериализатор сформирует историю.
         
         return order
