@@ -239,4 +239,6 @@ class B2BClient:
             return self._call_b2b(url=url, params={}, data=data, method='POST')
         except requests.exceptions.HTTPError as e:
             raise B2BUnavailableError(f'B2B unreserve failed: {e}')
+        except requests.exceptions.Timeout as e:
+            raise B2BUnavailableError(f'B2B unreserve failed: {e}')
         

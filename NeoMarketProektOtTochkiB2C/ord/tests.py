@@ -176,7 +176,7 @@ class OrderCancelTests(APITestCase):
         mock_unreserve.side_effect = [get_real_response(502,'{"code": "SERVER_ERROR", "message": "SERVER_ERROR"}'),
                                       get_real_response(200,json.dumps([{"id": str(self.order_item.product_id),"skus":[{"id":str(self.order_item.sku_id),"name":"nnn"}]}]))]
 
-        
+
         response = self.client.post(f'/api/v1/orders/{self.order.id}/cancel/')
         
         self.assertEqual(response.status_code, 200)
@@ -184,16 +184,16 @@ class OrderCancelTests(APITestCase):
         self.assertEqual(self.order.status, OrderStatus.CANCEL_PENDING)
         self.assertEqual(response.json()['status'], 'CANCEL_PENDING')
 
-    def test_cancel_assembling_order_returns_409(self):
-        """Попытка отменить заказ в статусе ASSEMBLING возвращает 409"""
-        self.order.status = OrderStatus.ASSEMBLING
+    def test_cancel_delivering_order_returns_409(self):
+        """Попытка отменить заказ в статусе DELIVERING возвращает 409"""
+        self.order.status = OrderStatus.DELIVERING
         self.order.save()
         
         response = self.client.post(f'/api/v1/orders/{self.order.id}/cancel/')
         
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()['code'], 'CANCEL_NOT_ALLOWED')
-        self.assertEqual(response.json()['details']['current_status'], 'ASSEMBLING')
+        self.assertEqual(response.json()['details']['current_status'], 'DELIVERING')
 
     def test_other_user_order_returns_404(self):
         """IDOR: попытка отменить чужой заказ возвращает 404 (не 403)"""

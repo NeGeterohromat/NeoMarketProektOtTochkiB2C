@@ -149,7 +149,7 @@ class OrderService:
             raise OrderNotFoundError()
 
         # 2. Проверка статуса
-        if order.status not in [OrderStatus.CREATED, OrderStatus.PAID]:
+        if order.status not in [OrderStatus.CREATED, OrderStatus.PAID, OrderStatus.ASSEMBLING]:
             raise CancelNotAllowedError(current_status=order.status)
 
         # 3. Формирование payload для B2B
