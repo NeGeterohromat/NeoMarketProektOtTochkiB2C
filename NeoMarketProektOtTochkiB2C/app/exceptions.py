@@ -28,3 +28,11 @@ class ReserveFailedError(Exception):
 
 class CheckoutValidationError(Exception):
     pass
+
+class OrderNotFoundError(Exception):
+    pass
+
+class CancelNotAllowedError(Exception):
+    def __init__(self, current_status: str):
+        self.current_status = current_status
+        super().__init__(f"Отмена невозможна: заказ в статусе {current_status}")

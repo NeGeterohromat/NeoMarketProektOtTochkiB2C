@@ -1,13 +1,14 @@
 import uuid
+import json
 from django.test import override_settings
 from app.services import B2BClient
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from unittest.mock import patch, MagicMock
-from .models import Order, OrderItem
-from app.services import B2BClient
+from .models import Order, OrderItem, OrderStatus
 from cart.models import CartItem
+from app.exceptions import B2BUnavailableError
 import requests
 
 User = get_user_model()
@@ -122,3 +123,83 @@ class OrderCheckoutTests(APITestCase):
                 
             self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
             self.assertEqual(response.data['code'], 'B2B_UNAVAILABLE')
+
+class OrderCancelTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser', password='testpass')
+        self.other_user = User.objects.create_user(username='otheruser', password='testpass')
+        
+        self.order = Order.objects.create(
+            user=self.user,
+            idempotency_key=uuid.uuid4(),
+            address_id=uuid.uuid4(),
+            payment_method_id=uuid.uuid4(),
+            status=OrderStatus.PAID,
+            total_price=5000
+        )
+        self.order_item = OrderItem.objects.create(
+            order=self.order,
+            sku_id=uuid.uuid4(),
+            product_id=uuid.uuid4(),
+            quantity=2,
+            unit_price=2500,
+            line_total=5000
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    @patch('ord.services.B2BClient._call_b2b')
+    def test_cancel_paid_order_transitions_to_cancelled(self, mock_unreserve):
+        """Happy path: успешная отмена оплаченного заказа"""
+        mock_unreserve.side_effect = [{'status': 'UNRESERVED', 'processed_at': '2026-06-09T13:35:39.158Z'},
+                                      [{'id': str(self.order_item.product_id),'skus':[{'id':str(self.order_item.sku_id),'name':'nnn'}]}]]
+        
+        response = self.client.post(f'/api/v1/orders/{self.order.id}/cancel/')
+        
+        self.assertEqual(response.status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, OrderStatus.CANCELLED)
+        self.assertEqual(response.json()['status'], 'CANCELLED')
+
+    @patch('ord.services.B2BClient._call_b2b_by_func')
+    def test_unreserve_failure_transitions_to_cancel_pending(self, mock_unreserve):
+        """Unhappy path: B2B недоступен, заказ переходит в CANCEL_PENDING"""
+        def get_real_response(status,text):
+            real_response = requests.Response()
+            real_response.status_code = status
+            real_response.reason = "SERVER_ERROR"
+            real_response.url = "https://api.example.com/data"
+            real_response._content = text.encode('utf-8')
+            real_response.encoding = 'utf-8'
+            return real_response
+
+        mock_unreserve.side_effect = [get_real_response(502,'{"code": "SERVER_ERROR", "message": "SERVER_ERROR"}'),
+                                      get_real_response(200,json.dumps([{"id": str(self.order_item.product_id),"skus":[{"id":str(self.order_item.sku_id),"name":"nnn"}]}]))]
+
+        
+        response = self.client.post(f'/api/v1/orders/{self.order.id}/cancel/')
+        
+        self.assertEqual(response.status_code, 200)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.status, OrderStatus.CANCEL_PENDING)
+        self.assertEqual(response.json()['status'], 'CANCEL_PENDING')
+
+    def test_cancel_assembling_order_returns_409(self):
+        """Попытка отменить заказ в статусе ASSEMBLING возвращает 409"""
+        self.order.status = OrderStatus.ASSEMBLING
+        self.order.save()
+        
+        response = self.client.post(f'/api/v1/orders/{self.order.id}/cancel/')
+        
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()['code'], 'CANCEL_NOT_ALLOWED')
+        self.assertEqual(response.json()['details']['current_status'], 'ASSEMBLING')
+
+    def test_other_user_order_returns_404(self):
+        """IDOR: попытка отменить чужой заказ возвращает 404 (не 403)"""
+        self.client.force_authenticate(user=self.other_user)
+        
+        response = self.client.post(f'/api/v1/orders/{self.order.id}/cancel/')
+        
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()['code'], 'ORDER_NOT_FOUND')

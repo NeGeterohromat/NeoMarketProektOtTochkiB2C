@@ -1,12 +1,13 @@
+from urllib import response
 import uuid
 import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
-from .serializers import OrderCreateSerializer, OrderResponseSerializer
+from .serializers import OrderCreateSerializer, OrderBaseResponseSerializer, OrderCancelRequestSerializer, OrderResponseSerializer
 from .services import OrderService, B2BClient
-from app.exceptions import B2BUnavailableError, ReserveFailedError, CheckoutValidationError, error_response
+from app.exceptions import B2BUnavailableError, ReserveFailedError, CheckoutValidationError, error_response, OrderNotFoundError, CancelNotAllowedError
 
 class OrderCreateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -33,7 +34,7 @@ class OrderCreateView(APIView):
                 idempotency_key=idempotency_key,
                 payload=serializer.validated_data
             )
-            order_ser = OrderResponseSerializer(order)
+            order_ser = OrderBaseResponseSerializer(order)
             data= order_ser.data
             data['user'] = request.user
             return Response(order_service.transform_order_to_response(data), status=stat)
@@ -47,3 +48,39 @@ class OrderCreateView(APIView):
             return Response({'code': 'RESERVE_FAILED', 'message': 'Не удалось зарезервировать товары', 'failed_items': getattr(e, 'failed_items', [])}, status=status.HTTP_409_CONFLICT)
         except B2BUnavailableError as e:
             return error_response('B2B_UNAVAILABLE','Сервис товаров временно недоступен, попробуйте позже',status.HTTP_503_SERVICE_UNAVAILABLE)
+
+class OrderCancelView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, order_id):
+        serializer = OrderCancelRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reason = serializer.validated_data.get('reason')
+
+        try:
+            order_service = OrderService()
+            order = order_service.cancel_order(request.user, order_id, reason)
+            response_data = OrderBaseResponseSerializer(order).data
+            response_data['user'] = request.user
+            return Response(order_service.transform_order_to_response(response_data), status=status.HTTP_200_OK)
+            
+        except OrderNotFoundError:
+            return error_response(
+                code='ORDER_NOT_FOUND',
+                message='Заказ не найден',
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except CancelNotAllowedError as e:
+            return error_response(
+                code='CANCEL_NOT_ALLOWED',
+                message=f'Отмена невозможна: заказ в статусе {e.current_status}',
+                status=status.HTTP_409_CONFLICT,
+                details={'current_status': e.current_status}
+            )
+        except Exception as e:
+            print(e)
+            return error_response(
+                code='INTERNAL_ERROR',
+                message='Внутренняя ошибка сервера',
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

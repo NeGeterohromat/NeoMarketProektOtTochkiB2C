@@ -227,4 +227,16 @@ class B2BClient:
                 return e.response.json()
             if e.response.status_code == 404:
                 raise e
+
+    def unreserve_inventory(self, order_id: str, items: list[dict]) -> dict:
+        """Вызов POST /api/v1/inventory/unreserve в B2B"""
+        url = f'{self.base_url}/api/v1/inventory/unreserve'
+        data = {
+            'order_id': order_id,
+            'items': items
+        }
+        try:
+            return self._call_b2b(url=url, params={}, data=data, method='POST')
+        except requests.exceptions.HTTPError as e:
+            raise B2BUnavailableError(f'B2B unreserve failed: {e}')
         
