@@ -184,16 +184,16 @@ class OrderCancelTests(APITestCase):
         self.assertEqual(self.order.status, OrderStatus.CANCEL_PENDING)
         self.assertEqual(response.json()['status'], 'CANCEL_PENDING')
 
-    def test_cancel_delivering_order_returns_409(self):
-        """Попытка отменить заказ в статусе DELIVERING возвращает 409"""
-        self.order.status = OrderStatus.DELIVERING
+    def test_cancel_delivered_order_returns_409(self):
+        """Попытка отменить заказ в статусе DELIVERED возвращает 409"""
+        self.order.status = OrderStatus.DELIVERED
         self.order.save()
         
         response = self.client.post(f'/api/v1/orders/{self.order.id}/cancel/')
         
         self.assertEqual(response.status_code, 409)
         self.assertEqual(response.json()['code'], 'CANCEL_NOT_ALLOWED')
-        self.assertEqual(response.json()['details']['current_status'], 'DELIVERING')
+        self.assertEqual(response.json()['details']['current_status'], 'DELIVERED')
 
     def test_other_user_order_returns_404(self):
         """IDOR: попытка отменить чужой заказ возвращает 404 (не 403)"""
